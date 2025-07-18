@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "task-management-app"
+version = "0.1.0"
+description = "A FastAPI-based task management application with MongoDB backend."
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+license = "MIT"
+dependencies = [
+    "FastAPI",
+    "uvicorn",
+    "pydantic",
+    "pymongo",
+    "python-dotenv",
+    "pytest",
+    "httpx",
+    "pydantic[email]",
+    "pytest-asyncio",
+    "python-jose",
+    "python-multipart",
+    "faker"
+]
+
+[tool.setuptools]
+packages = ["app", "config"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+include = "\\.pyi?$"
+
+[tool.isort]
+profile = "black"
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203, W503"]
