@@ -19,10 +19,12 @@ dependencies = [
     "pytest",
     "httpx",
     "pydantic[email]",
-    "pytest-asyncio",
+    "mongomock-motor==0.0.19",  # Added specific version
+    "pytest-asyncio==0.23.6",    # Added specific version
     "python-jose",
     "python-multipart",
-    "faker"
+    "faker",
+    "pytest-cov"
 ]
 
 [tool.setuptools]

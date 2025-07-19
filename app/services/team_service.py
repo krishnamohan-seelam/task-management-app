@@ -22,30 +22,24 @@ class TeamService:
         logger.info("TeamService initialized.")
         
     async def create_team(self, team_create: CreateTeamSchema) -> Dict:
-        """
-        Create a new team in the task management system.
-
-        Args:
-            team_create (CreateTeamSchema): Schema with team details.
-
-        Returns:
-            dict: The created team as a dictionary.
-
-        Raises:
-            HTTPException: If creation fails.
-        """
-        logger.info(f"Creating team: {team_create}")
-        team_dict = team_create.model_dump(exclude_unset=True)
-        team = TeamModel(**team_dict)
-        team_document = team.model_dump(by_alias=True)
-        result = await self.team_repository.create_team(team_document)
-        
-        if  result is not None:
-            logger.info(f"Team created successfully: {team_document}")
-            return team_document
-        else:
-            logger.error("Team creation failed")
-            raise HTTPException(status_code=400, detail="Team creation failed")
+        try:
+            team_dict = team_create.model_dump(exclude_unset=True)
+            team = TeamModel(**team_dict)
+            team_document = team.model_dump(by_alias=True)
+            result = await self.team_repository.create_team(team_document)
+            
+            if result is not None:
+                logger.info(f"Team created successfully: {team_document}")
+                return team_document
+            else:
+                logger.error("Team creation failed: No result returned")
+                raise HTTPException(status_code=400, detail="Team creation failed")
+        except ValueError as ve:
+            logger.error(f"Validation error: {str(ve)}")
+            raise HTTPException(status_code=422, detail=str(ve))
+        except Exception as e:
+            logger.error(f"Unexpected error creating team: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     async def get_team(self, team_id: str) -> Dict:
         """

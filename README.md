@@ -2,6 +2,12 @@
 
 A collaborative task management system built with FastAPI and MongoDB. Designed for teams, it enables project managers to assign tasks, team leads to delegate and monitor, and team members to update progress.
 
+## UI Sample
+
+Here is a sample of the application's dashboard:
+
+![Dashboard Page](Dashboard_page.jpeg)
+
 ## Project Structure
 
 ```
@@ -151,6 +157,3 @@ result = client['task_management_dev']['tasks'].aggregate([
 
 All modules and methods include up-to-date docstrings describing their purpose, arguments, return values, and exceptions. See the code for details.
 
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
