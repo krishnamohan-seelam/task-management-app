@@ -2,8 +2,19 @@ from fastapi import FastAPI
 from app.routes import team_lead, team_member, project_manager, auth
 from app.logging_config import logger
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from app.database.views import create_views
+from config.database import get_database
 
-app = FastAPI()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db = get_database()
+    await create_views(db)
+    yield
+
+app = FastAPI(lifespan=lifespan)
 logger.info("FastAPI application instance created.")
 
 app.include_router(team_lead.router, prefix="/team-lead", tags=["Team Lead"])

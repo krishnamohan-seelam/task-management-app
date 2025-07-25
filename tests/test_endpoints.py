@@ -1,31 +1,25 @@
 import pytest
-from fastapi.testclient import TestClient
-from app.main import app
+ 
 
-@pytest.fixture
-def client():
-    return TestClient(app)
-
-@pytest.fixture
-def mock_db_get(monkeypatch, mock_db):
-    monkeypatch.setattr("config.database.get_database", lambda: mock_db)
 
 @pytest.mark.asyncio
-async def test_get_all_tasks(client, mock_db_get):
-    response = client.get("/tasks")
+async def test_get_all_tasks(project_manager_client):
+    response = project_manager_client.get("/project-manager/tasks")
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    assert len(response.json()["tasks"]) == 1
+    
+
 
 @pytest.mark.asyncio
-async def test_create_task(client, mock_db_get):
+async def test_create_task(team_lead_client):
     data = {"title": "Test Task", "status": "pending", "assigned_to": "1"}
-    response = client.post("/tasks/", json=data)
+    response = team_lead_client.post("/team-lead/tasks/", json=data)
     assert response.status_code == 200
     assert response.json()["title"] == "Test Task"
 
 @pytest.mark.asyncio
-async def test_create_team_member(client, mock_db_get):
+async def test_create_team_member(project_manager_client):
     data = {"name": "John", "email": "john@example.com", "role": "developer"}
-    response = client.post("/team-member", json=data)
+    response = project_manager_client.post("/project-manager/team-member", json=data)
     assert response.status_code == 200
     assert response.json()["name"] == "John"

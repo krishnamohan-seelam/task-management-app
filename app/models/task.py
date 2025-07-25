@@ -124,10 +124,10 @@ class ResponseTaskSchema(BaseModel):
 
 class ResponseTeamTaskViewSchema(BaseModel):
     task_id: Optional[PyObjectId] = Field(default=None, alias="_id")
-    title: str
-    status: str
-    team_name: str
-    team_member: str
+    title: Optional[str]
+    status: Optional[str]
+    team_name: Optional[str]
+    team_member: Optional[str]
 
     model_config = ConfigDict(
         from_attributes=True,
