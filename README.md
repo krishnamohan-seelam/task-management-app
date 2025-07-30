@@ -107,22 +107,55 @@ uvicorn app.main:app --reload
 - `GET /team-member/team-members` — List all team members
 - `GET /team-member/team-member/{team_member_id}` — Get a team member by ID
 
-###  Flow diagram
+
 ## Architecture Flow Diagram
 
 ### Frontend-Backend Integration Flow
 ``` mermaid
 graph TB
 
-    %% Frontend
+    %% Services
+    subgraph "📦 Service Layer"
+        Q["Task Service 📋"]
+        R["Team Service 👥"]
+        S["Member Service 👤"]
+    end
+
+    %% Repositories
+    subgraph "🗃️ Repository Layer"
+        T["Task Repository 📋"]
+        U["Team Repository 👥"]
+        V["Member Repository 👤"]
+    end
+
+    %% Storage
+    subgraph "🍃 MongoDB Storage"
+        W["MongoDB Instance"]
+        X["team_tasks_view 📊"]
+        Y["tasks collection 📋"]
+        Z["teams collection 👥"]
+        AA["members collection 👤"]
+    end
+
+    %% FastAPI Backend
+    subgraph "🚀 FastAPI Backend (Port 8000)"
+        K["FastAPI main.py"]
+        L["Auth Dependencies 🔑"]
+        M["/project-manager/*"]
+        N["/team-lead/*"]
+        O["/team-member/*"]
+        P["/auth/*"]
+    end
+
+    %% React Frontend
     subgraph "🌐 React Frontend (Port 3000)"
         A["App.jsx"]
         B["LoginPage 🔐"]
         C["Dashboard 📊"]
         D["API Layer 🛠️"]
-        E["Project Manager 👨‍💼"]
-        F["Team Lead 👨‍💻"]
-        G["Team Member 👩‍💻"]
+        E["Project Manager Pages 👨‍💼"]
+        F["Team Lead Pages 👨‍💻"]
+        G["Team Member Pages 👩‍💻"]
         H["NavigationHeader 🧭"]
         I["RequireAuth 🔒"]
     end
@@ -139,30 +172,17 @@ graph TB
     F --> D
     G --> D
 
-    %% Backend
-    subgraph "🚀 FastAPI Backend (Port 8000)"
-        K["main.py"]
-        L["Auth Dependencies 🔑"]
-        M["/project-manager/*"]
-        N["/team-lead/*"]
-        O["/team-member/*"]
-        P["/auth/*"]
-        Q["Task Service 📋"]
-        R["Team Service 👥"]
-        S["Member Service 👤"]
-        T["Task Repo 📋"]
-        U["Team Repo 👥"]
-        V["Member Repo 👤"]
-    end
+    %% API Communication
+    D -->|HTTP Request| K
+    K -->|JSON Response| D
 
     %% Backend Flow
-    D -->|HTTP Req.| K
-    K -->|JSON Res.| D
     K --> L
     L --> M
     L --> N
     L --> O
     K --> P
+
     M --> Q
     M --> R
     M --> S
@@ -171,20 +191,13 @@ graph TB
     N --> S
     O --> Q
     O --> S
+
+    %% Data Linking
     Q --> T
     R --> U
     S --> V
 
-    %% Database
-    subgraph "🍃 MongoDB"
-        W["MongoDB 🍃"]
-        X["team_tasks_view 📊"]
-        Y["tasks collection 📋"]
-        Z["teams collection 👥"]
-        AA["members collection 👤"]
-    end
-
-    %% Data Persistence
+    %% DB Layer Connections
     T --> W
     U --> W
     V --> W
@@ -192,6 +205,7 @@ graph TB
     T --> Y
     U --> Z
     V --> AA
+
 ```
 ### Key Integration Points
 
@@ -208,6 +222,7 @@ graph TB
 #### 3. **Data Flow Examples**
 
 **Task Management:**
+```
 ProjectManagerTasksPage.jsx
 ↓ (fetchTasks)
 api.js → GET /project-manager/tasks
@@ -221,8 +236,9 @@ TaskRepository.get_all()
 MongoDB team_tasks_view
 ↓ (JSON response)
 React State Update → UI Render
-
+```
 **Team Management:**
+```
 ProjectManagerTeamsPage.jsx
 ↓ (createTeam)
 api.js → POST /project-manager/create-team
@@ -234,7 +250,7 @@ TeamService.create_team()
 TeamRepository.create()
 ↓
 MongoDB teams collection
-
+```
 ### 4. **API Communication Pattern**
 - **Headers**: All requests include `Authorization: Bearer <token>`
 - **Base URL**: `http://localhost:8000` (configurable)
