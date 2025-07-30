@@ -107,53 +107,148 @@ uvicorn app.main:app --reload
 - `GET /team-member/team-members` — List all team members
 - `GET /team-member/team-member/{team_member_id}` — Get a team member by ID
 
-## Define required views
-``` python
-from pymongo import MongoClient
+###  Flow diagram
+## Architecture Flow Diagram
 
-# Requires the PyMongo package.
-# https://api.mongodb.com/python/current
+### Frontend-Backend Integration Flow
+``` mermaid
+graph TB
 
-client = MongoClient('mongodb://localhost:27017/')
-result = client['task_management_dev']['tasks'].aggregate([
-    {
-        '$addFields': {
-            'team_id_obj': {
-                '$toObjectId': '$team_id'
-            }, 
-            'assigned_to_obj': {
-                '$toObjectId': '$assigned_to'
-            }
-        }
-    }, {
-        '$lookup': {
-            'from': 'teams', 
-            'localField': 'team_id_obj', 
-            'foreignField': '_id', 
-            'as': 'team'
-        }
-    }, {
-        '$unwind': '$team'
-    }, {
-        '$lookup': {
-            'from': 'team_members', 
-            'localField': 'assigned_to_obj', 
-            'foreignField': '_id', 
-            'as': 'assignee'
-        }
-    }, {
-        '$unwind': '$assignee'
-    }, {
-        '$project': {
-            'title': 1, 
-            'status': 1, 
-            'team_name': '$team.name', 
-            'team_member': '$assignee.name'
-        }
-    }
-])
+    %% Frontend
+    subgraph "🌐 React Frontend (Port 3000)"
+        A["App.jsx"]
+        B["LoginPage 🔐"]
+        C["Dashboard 📊"]
+        D["API Layer 🛠️"]
+        E["Project Manager 👨‍💼"]
+        F["Team Lead 👨‍💻"]
+        G["Team Member 👩‍💻"]
+        H["NavigationHeader 🧭"]
+        I["RequireAuth 🔒"]
+    end
+
+    %% Frontend Flow
+    A --> B
+    B --> C
+    A --> H
+    A --> I
+    C --> E
+    C --> F
+    C --> G
+    E --> D
+    F --> D
+    G --> D
+
+    %% Backend
+    subgraph "🚀 FastAPI Backend (Port 8000)"
+        K["main.py"]
+        L["Auth Dependencies 🔑"]
+        M["/project-manager/*"]
+        N["/team-lead/*"]
+        O["/team-member/*"]
+        P["/auth/*"]
+        Q["Task Service 📋"]
+        R["Team Service 👥"]
+        S["Member Service 👤"]
+        T["Task Repo 📋"]
+        U["Team Repo 👥"]
+        V["Member Repo 👤"]
+    end
+
+    %% Backend Flow
+    D -->|HTTP Req.| K
+    K -->|JSON Res.| D
+    K --> L
+    L --> M
+    L --> N
+    L --> O
+    K --> P
+    M --> Q
+    M --> R
+    M --> S
+    N --> Q
+    N --> R
+    N --> S
+    O --> Q
+    O --> S
+    Q --> T
+    R --> U
+    S --> V
+
+    %% Database
+    subgraph "🍃 MongoDB"
+        W["MongoDB 🍃"]
+        X["team_tasks_view 📊"]
+        Y["tasks collection 📋"]
+        Z["teams collection 👥"]
+        AA["members collection 👤"]
+    end
+
+    %% Data Persistence
+    T --> W
+    U --> W
+    V --> W
+    T --> X
+    T --> Y
+    U --> Z
+    V --> AA
 ```
+### Key Integration Points
+
+#### 1. **Authentication Flow**
+- **Frontend**: `LoginPage.jsx` → `api.js` → `login()` function
+- **Backend**: `POST /auth/login` → JWT token generation
+- **Storage**: Token stored in `localStorage` for subsequent requests
+
+#### 2. **Role-Based Access**
+- **Frontend**: `RequireAuth` component checks for valid token
+- **Backend**: `require_roles()` dependency validates user permissions
+- **Routes**: Different page components for each role (PM, TL, TM)
+
+#### 3. **Data Flow Examples**
+
+**Task Management:**
+ProjectManagerTasksPage.jsx
+↓ (fetchTasks)
+api.js → GET /project-manager/tasks
+↓
+project_manager.py → get_all_tasks()
+↓
+TaskService.get_all_tasks()
+↓
+TaskRepository.get_all()
+↓
+MongoDB team_tasks_view
+↓ (JSON response)
+React State Update → UI Render
+
+**Team Management:**
+ProjectManagerTeamsPage.jsx
+↓ (createTeam)
+api.js → POST /project-manager/create-team
+↓
+project_manager.py → create_team()
+↓
+TeamService.create_team()
+↓
+TeamRepository.create()
+↓
+MongoDB teams collection
+
+### 4. **API Communication Pattern**
+- **Headers**: All requests include `Authorization: Bearer <token>`
+- **Base URL**: `http://localhost:8000` (configurable)
+- **Error Handling**: Try-catch blocks with user-friendly error messages
+- **Loading States**: Spinner components during API calls
+
+#### 5. **State Management**
+- **Local State**: React `useState` for component-level data
+- **Token Storage**: `localStorage` for authentication persistence
+- **Real-time Updates**: Manual refresh after CRUD operations
+
 ## Code Documentation
 
 All modules and methods include up-to-date docstrings describing their purpose, arguments, return values, and exceptions. See the code for details.
+## Code Documentation
 
+All modules and methods include up-to-date docstrings describing their purpose, arguments, return values, and exceptions. See the code for details.
