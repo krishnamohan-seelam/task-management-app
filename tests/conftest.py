@@ -41,9 +41,10 @@ def override_get_current_user(mock_user:dict):
         return {"user_id": mock_user['id'], "role": mock_user['role']}
     return _override_get_current_user
 
+@pytest.fixture(autouse=True)
+def get_mongo_db():
+    return AsyncMongoMockClient()['task_management_dev']
  
-
-
 async def mock_mongo():
     client = AsyncMongoMockClient()
     db =client['task_management_dev']

@@ -30,7 +30,7 @@ class TeamMemberService:
             raise HTTPException(status_code=400, detail="Invalid team member data")
         # Convert the Pydantic model to a dictionary
 
-        team_member_data = team_member_data.dict(exclude_unset=True)
+        team_member_data = team_member_data.model_dump(exclude_unset=True)
         team_member = TeamMemberModel(**team_member_data)
         document = team_member.model_dump(by_alias=True)
 

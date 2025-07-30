@@ -6,9 +6,9 @@ from app.repositories.task_repository import TaskRepository
 
 
 @pytest.fixture
-def repo():
-    db = {'tasks': AsyncMock()}
-    return TaskRepository(db)
+def repo(get_mongo_db):
+
+    return TaskRepository(get_mongo_db)
 
 @pytest.mark.asyncio
 async def test_create_task(repo):
