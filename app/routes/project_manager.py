@@ -142,12 +142,19 @@ async def create_team(team: CreateTeamSchema, team_service: TeamService = Depend
     return created_team
 
 
-@router.post("/update-team", response_model=ResponseTeamSchema,response_model_by_alias=False)
-async def update_team(team_id:str,team: UpdateTeamSchema, team_service: TeamService = Depends(get_team_service)):
-    created_team = await team_service.update_team(team_id=team_id, team_update=team)
-    if not created_team:
-        raise HTTPException(status_code=400, detail="Team update failed")
-    return created_team
+
+@router.put("/update-team/{team_id}", response_model=ResponseTeamSchema, response_model_by_alias=False)
+async def update_team(
+    team_id: str,
+    team: UpdateTeamSchema,
+    team_service: TeamService = Depends(get_team_service)
+):
+    result = await team_service.update_team(team_id=team_id, team_update=team)
+    updated_team = result.get("team")
+    is_updated = result.get("updated")
+    if not is_updated:
+        raise HTTPException(status_code=404, detail="Team not found or update failed")
+    return updated_team
 
 @router.post("/team-member", response_model=ResponseTeamMemberSchema, response_model_by_alias=False)
 async def create_team_member(

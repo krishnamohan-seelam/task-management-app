@@ -11,6 +11,7 @@ const ProjectManagerTeamsPage = () => {
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [projectManagers, setProjectManagers] = useState([]);
+  const [originalTeam, setOriginalTeam] = useState(null);
 
   const token = localStorage.getItem('access_token');
   const PROJECT_MANAGER_ROLE = 'project_manager';
@@ -52,12 +53,25 @@ const ProjectManagerTeamsPage = () => {
     setLoading(true);
     try {
       if (editId) {
-        await updateTeam(token, editId, form);
+        // Compare form with originalTeam for changes
+        const hasChanged =
+          (originalTeam?.name !== form.name) ||
+          (originalTeam?.project_manager !== form.project_manager &&
+           originalTeam?.project_manager_id !== form.project_manager);
+
+        if (hasChanged) {
+          await updateTeam(token, editId, form);
+        }
+        else {
+          console.log('No changes detected, updateTeam API not called.');
+        }
+        // else: no API call if nothing changed
       } else {
         await createTeam(token, form);
       }
       setForm({ name: '' });
       setEditId(null);
+      setOriginalTeam(null);
       loadTeams();
     } catch {
       setError('Failed to save team');
@@ -72,6 +86,10 @@ const ProjectManagerTeamsPage = () => {
       project_manager: team.project_manager || team.project_manager_id || ''
     });
     setEditId(team.team_id || team._id);
+    setOriginalTeam({
+      name: team.name,
+      project_manager: team.project_manager || team.project_manager_id || ''
+    });
   };
 
   const handleDelete = async (id) => {
@@ -146,7 +164,7 @@ const ProjectManagerTeamsPage = () => {
           {editId && (
             <Button
               type="button"
-              onClick={() => { setEditId(null); setForm({ name: '', project_manager: '' }); }}
+              onClick={() => { setEditId(null); setForm({ name: '', project_manager: '' }); setOriginalTeam(null); }}
             >
               Cancel
             </Button>

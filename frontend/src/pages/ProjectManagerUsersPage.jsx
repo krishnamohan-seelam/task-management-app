@@ -8,6 +8,7 @@ const ProjectManagerUsersPage = () => {
   const [form, setForm] = useState({ name: '', email: '', role: 'team_member', password: '' });
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [originalUser, setOriginalUser] = useState(null);
 
   const token = localStorage.getItem('access_token');
 
@@ -34,12 +35,26 @@ const ProjectManagerUsersPage = () => {
     setLoading(true);
     try {
       if (editId) {
-        await updateUser(token, editId, form);
+        // Only update if something changed (ignore password if blank)
+        const hasChanged =
+          (originalUser?.name !== form.name) ||
+          (originalUser?.email !== form.email) ||
+          (originalUser?.role !== form.role) ||
+          (form.password && form.password.length > 0);
+
+        if (hasChanged) {
+          await updateUser(token, editId, form);
+        } else {
+          console.log('No changes detected, updateUser API not called.');
+        }
+        // else: no API call if nothing changed
       } else {
+        console.log
         await createUser(token, form);
       }
       setForm({ name: '', email: '', role: 'team_member', password: '' });
       setEditId(null);
+      setOriginalUser(null);
       loadMembers();
     } catch {
       setError('Failed to save user');
@@ -51,6 +66,7 @@ const ProjectManagerUsersPage = () => {
   const handleEdit = (member) => {
     setForm({ name: member.name || '', email: member.email || '', role: member.role || 'team_member', password: '' });
     setEditId(member.member_id || member._id);
+    setOriginalUser({ name: member.name || '', email: member.email || '', role: member.role || 'team_member' });
   };
 
   const handleDelete = async (id) => {
@@ -109,7 +125,7 @@ const ProjectManagerUsersPage = () => {
           >
             Update User
           </Button>
-          {editId && <Button type="button" onClick={() => { setEditId(null); setForm({ name: '', email: '', role: 'team_member', password: '' }); }}  style={{ marginTop: 24 }}>Cancel</Button>}
+          {editId && <Button type="button" onClick={() => { setEditId(null); setForm({ name: '', email: '', role: 'team_member', password: '' }); setOriginalUser(null); }}  style={{ marginTop: 24 }}>Cancel</Button>}
         </form>
         {error && <Callout intent="danger" style={{ marginBottom: 16 }}>{error}</Callout>}
         {loading ? <Spinner /> : (

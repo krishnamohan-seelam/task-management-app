@@ -6,6 +6,7 @@ from typing import List, Dict, Optional
 from app.models.team import TeamModel, TeamMemberModel
 from .abstract_repository import AbstractRepository
 from app.logging_config import logger
+from app.utils import UpdateResult
 
 class TeamRepository(AbstractRepository):
     def __init__(self, db):
@@ -27,13 +28,13 @@ class TeamRepository(AbstractRepository):
         result = await self.collection.update_one({"_id": ObjectId(obj_id)}, {"$set": obj_update})
         if result.matched_count == 0:
             logger.warning(f"No team found with ID: {obj_id}")
-            return False
-        logger.info(f"Updated team with ID: {obj_id} with data: {obj_update}")
+
+         
         if result.modified_count == 0:
             logger.info(f"No changes made to team with ID: {obj_id}")
-            return False
+
         logger.info(f"Successfully updated team with ID: {obj_id}")
-        return result.modified_count > 0
+        return UpdateResult(matched=result.matched_count > 0, modified=result.modified_count > 0) 
 
     async def delete(self, obj_id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(obj_id)})

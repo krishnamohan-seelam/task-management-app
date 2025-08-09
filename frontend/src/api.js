@@ -64,6 +64,7 @@ export async function fetchTeamMembersByRole(token, role) {
 }
 
 export async function updateTeam(token, teamId, team) {
+  
   const res = await fetch(`${API_BASE}/project-manager/update-team/${teamId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -84,7 +85,8 @@ export async function deleteTeam(token, teamId) {
 
 // Team Members (Users)
 export async function createUser(token, user) {
-  const res = await fetch(`${API_BASE}/project-manager/users`, {
+  console.log('Creating user:', user);
+  const res = await fetch(`${API_BASE}/project-manager/team-member`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(user),

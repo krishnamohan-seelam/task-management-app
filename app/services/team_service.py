@@ -72,7 +72,7 @@ class TeamService:
     
     async def update_team(self, team_id: str, team_update: UpdateTeamSchema) -> Dict:
         """
-        Update a team's details.
+        Update a team's details only if changes are detected.
 
         Args:
             team_id (str): Team ID.
@@ -84,13 +84,19 @@ class TeamService:
         Raises:
             HTTPException: If not found or update fails.
         """
-        document=team_update.model_dump(exclude_unset=True)
-        updated = await self.team_repository.update_team(team_id, document)
-        if updated:
-            updated_team = await self.task_repository.get(team_id)
-            return updated_team
-        else:
-            raise HTTPException(status_code=404, detail="Team not found or update failed")
+        document = team_update.model_dump(exclude_unset=True)
+        update_result = await self.team_repository.update(team_id, document)
+
+        if not update_result.matched:
+            return {
+                "team": None,
+                "updated": False
+            }
+
+        return {
+            "team": await self.team_repository.get(team_id),
+            "updated": True
+        }
     
     async def delete_team(self, team_id: str) -> bool:
         """

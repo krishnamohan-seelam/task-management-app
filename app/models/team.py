@@ -108,7 +108,7 @@ class UpdateTeamSchema(BaseModel):
         json_schema_extra={"str_strip_whitespace": True, "str_min_length": 1, "str_max_length": 255}
     )
 
-class ResponseTeamSchema(BaseModel):
+class   ResponseTeamSchema(BaseModel):
     """
     Schema for returning team data in API responses.
     """
