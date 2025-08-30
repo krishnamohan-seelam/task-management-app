@@ -47,8 +47,9 @@ const DashboardPage = () => {
 
   // Helper to get members of a team
   const getTeamMembers = (team) => {
-    if (!team || !team.members || !Array.isArray(members)) return [];
-    return members.filter(m => team.members.includes(m.member_id || m._id));
+    if (!team || !Array.isArray(team.members) || !Array.isArray(members)) return [];
+    return team.members;
+
   };
 
   // Helper to get project manager
@@ -102,10 +103,8 @@ const DashboardPage = () => {
                             <>
                               <b>Project Manager:</b>
                               <br />
-                              {getProjectManager(team)
-                                ? (getProjectManager(team).name || getProjectManager(team).email)
-                                : <span style={{ color: 'red' }}>Project manager not assigned</span>
-                              }
+                              {team.project_manager_name}
+
                             </>
                           }
                         />
@@ -119,8 +118,8 @@ const DashboardPage = () => {
                                 {getTeamMembers(team).length === 0
                                   ? <li style={{ color: '#aaa' }}>No members</li>
                                   : getTeamMembers(team).map(m => (
-                                      <li key={m.member_id || m._id}>{m.name || m.email}</li>
-                                    ))
+                                    <li key={m.member_id || m._id}>{m.name || m.email}</li>
+                                  ))
                                 }
                               </ul>
                             </div>
@@ -178,7 +177,7 @@ const DashboardPage = () => {
                       </Tag>
                     </td>
                     <td>
-                      <Tag>{task.team_member||'Unassigned'}</Tag>
+                      <Tag>{task.team_member || 'Unassigned'}</Tag>
                     </td>
                     <td>
                       <Tag>{task.team_name || 'No team'}</Tag>

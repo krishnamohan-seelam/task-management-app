@@ -8,9 +8,11 @@ from .abstract_repository import AbstractRepository
 from app.logging_config import logger
 from app.utils import UpdateResult
 
+
 class TeamRepository(AbstractRepository):
     def __init__(self, db):
-        self.collection = db['teams']
+        self.collection = db["teams"]
+        self.teams_view = db["teams_view"]
         logger.info("TeamRepository initialized.")
 
     async def create(self, obj: Dict) -> str:
@@ -22,19 +24,22 @@ class TeamRepository(AbstractRepository):
         return str(result.inserted_id)
 
     async def get(self, obj_id: str) -> Optional[Dict]:
-        return await self.collection.find_one({"_id": ObjectId(obj_id)})
+        return await self.teams_view.find_one({"_id": ObjectId(obj_id)})
 
     async def update(self, obj_id: str, obj_update: Dict) -> bool:
-        result = await self.collection.update_one({"_id": ObjectId(obj_id)}, {"$set": obj_update})
+        result = await self.collection.update_one(
+            {"_id": ObjectId(obj_id)}, {"$set": obj_update}
+        )
         if result.matched_count == 0:
             logger.warning(f"No team found with ID: {obj_id}")
 
-         
         if result.modified_count == 0:
             logger.info(f"No changes made to team with ID: {obj_id}")
 
         logger.info(f"Successfully updated team with ID: {obj_id}")
-        return UpdateResult(matched=result.matched_count > 0, modified=result.modified_count > 0) 
+        return UpdateResult(
+            matched=result.matched_count > 0, modified=result.modified_count > 0
+        )
 
     async def delete(self, obj_id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(obj_id)})
@@ -43,13 +48,15 @@ class TeamRepository(AbstractRepository):
             return False
         logger.info(f"Deleted team with ID: {obj_id}")
         if result.deleted_count > 1:
-            logger.warning(f"Multiple teams deleted with ID: {obj_id}, expected only one")
+            logger.warning(
+                f"Multiple teams deleted with ID: {obj_id}, expected only one"
+            )
         else:
             logger.info(f"Successfully deleted team with ID: {obj_id}")
         return result.deleted_count > 0
 
     async def get_all(self) -> List[Dict]:
-        cursor = self.collection.find()
+        cursor = self.teams_view.find()
         return await cursor.to_list(length=None)
 
     # Legacy methods call new abstract methods
@@ -81,14 +88,16 @@ class TeamRepository(AbstractRepository):
         """
         result = await self.collection.update_one(
             {"_id": ObjectId(team_id)},
-            {"$addToSet": {"member_ids": ObjectId(member_id)}}
+            {"$addToSet": {"member_ids": ObjectId(member_id)}},
         )
         if result.matched_count == 0:
             logger.warning(f"No team found with ID: {team_id} to add member")
             return False
         if result.modified_count == 0:
-            logger.info(f"Member with ID: {member_id} already exists in team with ID: {team_id}")
-            return False            
+            logger.info(
+                f"Member with ID: {member_id} already exists in team with ID: {team_id}"
+            )
+            return False
         logger.info(f"Added member with ID: {member_id} to team with ID: {team_id}")
         return result.modified_count > 0
 
@@ -104,19 +113,20 @@ class TeamRepository(AbstractRepository):
             bool: True if removed.
         """
         result = await self.collection.update_one(
-            {"_id": ObjectId(team_id)},
-            {"$pull": {"member_ids": ObjectId(member_id)}}
+            {"_id": ObjectId(team_id)}, {"$pull": {"member_ids": ObjectId(member_id)}}
         )
         if result.matched_count == 0:
             logger.warning(f"No team found with ID: {team_id} to remove member")
             return False
         if result.modified_count == 0:
-            logger.info(f"Member with ID: {member_id} not found in team with ID: {team_id}")
+            logger.info(
+                f"Member with ID: {member_id} not found in team with ID: {team_id}"
+            )
             return False
         logger.info(f"Removed member with ID: {member_id} from team with ID: {team_id}")
         return result.modified_count > 0
 
-    async def get_team_members(self, team_id: str) -> list:
+    async def get_team_members(self, team_id: str) -> dict:
         """
         Get all member ObjectIds for a team.
 
@@ -126,13 +136,12 @@ class TeamRepository(AbstractRepository):
         Returns:
             List[dict]: Team members.
         """
-        team = await self.get_team_by_id(team_id)
+        team = await self.get(team_id)
         if not team:
             logger.warning(f"No team found with ID: {team_id}")
-            return []
-        logger.info(f"Retrieved members for team with ID: {team_id}")   
-        
-        return team.get("member_ids", []) if team else []
+            return {}
+        logger.info(f"Retrieved members for team with ID: {team_id}")
+        return team
 
     async def get_all_team_members(self) -> list:
         """

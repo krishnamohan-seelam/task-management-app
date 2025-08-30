@@ -1,19 +1,30 @@
 from typing import List, Dict, Optional
-from fastapi import Depends,HTTPException
+from fastapi import Depends, HTTPException
 from app.repositories.team_member_repository import TeamMemberRepository
-from app.models.team import TeamMemberModel,ResponseTeamSchema, AddTeamMembersSchema, CreateTeamMemberSchema,ResponseTeamMemberSchema,ResponseTeamMemberSchema, ResponseTeamMembersCollection
+from app.models.team import (
+    TeamMemberModel,
+    ResponseTeamSchema,
+    AddTeamMembersSchema,
+    CreateTeamMemberSchema,
+    ResponseTeamMemberSchema,
+    ResponseTeamMemberSchema,
+    ResponseTeamMembersCollection,
+)
 from config.database import get_database
 from app.logging_config import logger
 
 from pymongo.asynchronous.database import AsyncDatabase
 from fastapi import HTTPException
 
+
 class TeamMemberService:
     def __init__(self, team_member_repository: TeamMemberRepository):
         self.team_member_repository = team_member_repository
         logger.info("TeamMemberService initialized.")
 
-    async def create_team_member(self, team_member_data: CreateTeamMemberSchema) -> dict:
+    async def create_team_member(
+        self, team_member_data: CreateTeamMemberSchema
+    ) -> dict:
         """
         Create a new team member.
 
@@ -36,13 +47,12 @@ class TeamMemberService:
 
         logger.info(f"Creating team member: {team_member_data}")
         result = await self.team_member_repository.create_team_member(document)
-        
+
         if not result:
             logger.error("Team member creation failed")
             raise HTTPException(status_code=400, detail="Team member creation failed")
         logger.info(f"Team member created successfully: {document}")
         return document
-
 
     async def get_team_member_by_id(self, team_member_id: str) -> Optional[dict]:
         member = await self.team_member_repository.get_team_member_by_id(team_member_id)
@@ -58,7 +68,7 @@ class TeamMemberService:
         Raises:
             HTTPException: If none found.
         """
-        result = await self.team_member_repository.get_all_team_members()
+        result = await self.team_member_repository.get_all()
         if not result:
             raise HTTPException(status_code=404, detail="No team members found")
         members = [member_dict for member_dict in result]
@@ -78,9 +88,13 @@ class TeamMemberService:
         Raises:
             HTTPException: If not found or not updated.
         """
-        updated = await self.team_member_repository.update_team_member(team_member_id, update_data)
+        updated = await self.team_member_repository.update_team_member(
+            team_member_id, update_data
+        )
         if not updated:
-            raise HTTPException(status_code=404, detail="Team member not found or not updated")
+            raise HTTPException(
+                status_code=404, detail="Team member not found or not updated"
+            )
         return updated
 
     async def delete_team_member(self, team_member_id: str) -> bool:
@@ -98,7 +112,9 @@ class TeamMemberService:
         """
         deleted = await self.team_member_repository.delete_team_member(team_member_id)
         if not deleted:
-            raise HTTPException(status_code=404, detail="Team member not found or not deleted")
+            raise HTTPException(
+                status_code=404, detail="Team member not found or not deleted"
+            )
         return deleted
 
     async def get_team_member_by_email(self, email: str) -> Optional[dict]:
@@ -106,7 +122,7 @@ class TeamMemberService:
         Get a team member by email.
         """
         return await self.team_member_repository.get_team_member_by_email(email)
-    
+
     async def get_team_members_by_role(self, role: str) -> List[dict]:
         """
         Get team members by role.
@@ -119,7 +135,9 @@ class TeamMemberService:
         """
         members = await self.team_member_repository.get_team_members_by_role(role)
         if not members:
-            raise HTTPException(status_code=404, detail="No team members found with the specified role")
+            raise HTTPException(
+                status_code=404, detail="No team members found with the specified role"
+            )
         return members
 
 
