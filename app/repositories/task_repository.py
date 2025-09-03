@@ -1,19 +1,21 @@
 from pymongo import MongoClient
 from bson import ObjectId
-from typing import List,Dict
+from typing import List, Dict
 from app.models.task import TaskModel
-from  pymongo.asynchronous.cursor import AsyncCursor
+from pymongo.asynchronous.cursor import AsyncCursor
 from .abstract_repository import AbstractRepository
 from app.logging_config import logger
 
+
 class TaskRepository(AbstractRepository):
     def __init__(self, db):
-        self.collection = db['tasks']
-        self.view = db['team_tasks_view']
+        self.collection = db["tasks"]
+        self.view = db["team_tasks_view"]
         logger.info("TaskRepository initialized.")
 
     async def create(self, obj: Dict) -> str:
         logger.info(f"Inserting new task: {obj}")
+        # Ensure obj is serialized correctly for MongoDB
         return await self.collection.insert_one(obj)
 
     async def get(self, obj_id: str) -> Dict:
@@ -21,7 +23,7 @@ class TaskRepository(AbstractRepository):
         Get a task by ID.
 
         Args:
-            task_id (str): Task ID.
+            obj_id (str): Task ID.
 
         Returns:
             dict: Task document.
@@ -33,13 +35,15 @@ class TaskRepository(AbstractRepository):
         Update a task.
 
         Args:
-            task_id (str): Task ID.
-            task_update (TaskModel): Fields to update.
+            obj_id (str): Task ID.
+            obj_update (TaskModel): Fields to update.
 
         Returns:
             bool: True if updated.
         """
-        result = await self.collection.update_one({"_id": ObjectId(obj_id)}, {"$set": obj_update})
+        result = await self.collection.update_one(
+            {"_id": ObjectId(obj_id)}, {"$set": obj_update}
+        )
         return result.modified_count > 0
 
     async def delete(self, obj_id: str) -> bool:
@@ -76,7 +80,7 @@ class TaskRepository(AbstractRepository):
         Returns:
             AsyncCursor: Cursor for all tasks.
         """
-        return  self.collection.find()
+        return self.collection.find()
 
     async def get_tasks_by_member(self, assigned_to: str) -> list:
         """

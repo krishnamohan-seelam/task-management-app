@@ -1,7 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
-from app.models.task import CreateTaskSchema, ResponseTaskSchema, UpdateTaskSchema,AssignTaskSchema
+from app.models.task import (
+    CreateTaskSchema,
+    TaskModel,
+    UpdateTaskSchema,
+    AssignTaskSchema,
+)
 from app.models.team import (
     CreateTeamSchema,
     CreateTeamMemberSchema,
@@ -16,13 +21,13 @@ from app.services.team_service import TeamService, get_team_service
 from app.logging_config import logger
 from app.dependencies.auth import require_roles
 
-router = APIRouter(
-    dependencies=[Depends(require_roles("team_lead"))]
-)
+router = APIRouter(dependencies=[Depends(require_roles("team_lead"))])
 
 
-@router.post("/tasks/", response_model=ResponseTaskSchema,response_model_by_alias=False)
-async def create_task(task: CreateTaskSchema,task_service: TaskService = Depends(get_task_service)):
+@router.post("/tasks/", response_model=TaskModel, response_model_by_alias=False)
+async def create_task(
+    task: CreateTaskSchema, task_service: TaskService = Depends(get_task_service)
+):
     logger.info(f"[Team Lead] Creating task: {task}")
     """
     Creates a new task using the provided task data.
@@ -37,13 +42,20 @@ async def create_task(task: CreateTaskSchema,task_service: TaskService = Depends
     """
     return await task_service.create_task(task)
 
-@router.post("/assign-task/{task_id}", response_model=ResponseTaskSchema,response_model_by_alias=False)
-async def assign_task(task_id: str, task: AssignTaskSchema,task_service: TaskService = Depends(get_task_service)):
+
+@router.post(
+    "/assign-task/{task_id}", response_model=TaskModel, response_model_by_alias=False
+)
+async def assign_task(
+    task_id: str,
+    task: AssignTaskSchema,
+    task_service: TaskService = Depends(get_task_service),
+):
     """
     Assign a task to a user.
     Args:
         task (AssignTaskSchema): The schema containing the details of the task to be assigned.
-        task_service (TaskService, optional): The service responsible for handling task-related operations. 
+        task_service (TaskService, optional): The service responsible for handling task-related operations.
             Defaults to a dependency injection of `get_task_service`.
     Returns:
         The assigned task object after successful assignment.
@@ -51,13 +63,16 @@ async def assign_task(task_id: str, task: AssignTaskSchema,task_service: TaskSer
         HTTPException: If an error occurs during task assignment, an HTTP 400 error is raised with the error details.
     """
     try:
-        task =  await task_service.update_task(task_id,task)
+        task = await task_service.update_task(task_id, task)
         return task
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/tasks", response_model=List[ResponseTaskSchema])
-async def get_assigned_tasks(team_lead_id: str, task_service: TaskService = Depends(get_task_service)):
+
+@router.get("/tasks", response_model=List[TaskModel])
+async def get_assigned_tasks(
+    team_lead_id: str, task_service: TaskService = Depends(get_task_service)
+):
     """
     Retrieve all tasks assigned to a specific team lead.
 
@@ -72,15 +87,19 @@ async def get_assigned_tasks(team_lead_id: str, task_service: TaskService = Depe
     return tasks
 
 
-@router.put("/update-task/{task_id}", response_model=ResponseTaskSchema)
-async def update_task(task_id: str, task_update: UpdateTaskSchema, task_service: TaskService = Depends(get_task_service)):
+@router.put("/update-task/{task_id}", response_model=TaskModel)
+async def update_task(
+    task_id: str,
+    task_update: UpdateTaskSchema,
+    task_service: TaskService = Depends(get_task_service),
+):
     updated_task = await task_service.update_task(task_id, task_update)
     if not updated_task:
         raise HTTPException(status_code=404, detail="Task not found")
     return updated_task
 
 
-@router.get("/track-tasks", response_model=List[ResponseTaskSchema])
+@router.get("/track-tasks", response_model=List[TaskModel])
 async def track_tasks(task_service: TaskService = Depends(get_task_service)):
     tasks = await task_service.get_all_tasks()
     return tasks
@@ -92,7 +111,7 @@ async def add_team_members(
     members: AddTeamMembersSchema,
     team_lead_id: str,
     team_service: TeamService = Depends(get_team_service),
-    team_member_service: TeamMemberService = Depends(get_team_member_service)
+    team_member_service: TeamMemberService = Depends(get_team_member_service),
 ):
     updated_team = await team_service.add_team_members(team_id, members, team_lead_id)
     if not updated_team:
@@ -100,11 +119,10 @@ async def add_team_members(
     return updated_team
 
 
-
 @router.get("/team-member/{team_member_id}", response_model=ResponseTeamMemberSchema)
 async def get_team_member_by_id(
     team_member_id: str,
-    team_member_service: TeamMemberService = Depends(get_team_member_service)
+    team_member_service: TeamMemberService = Depends(get_team_member_service),
 ):
     member = await team_member_service.get_team_member_by_id(team_member_id)
     return member
@@ -114,11 +132,13 @@ async def get_team_member_by_id(
 async def update_team_member(
     team_member_id: str,
     update_data: dict,
-    team_member_service: TeamMemberService = Depends(get_team_member_service)
+    team_member_service: TeamMemberService = Depends(get_team_member_service),
 ):
     updated = await team_member_service.update_team_member(team_member_id, update_data)
     if not updated:
-        raise HTTPException(status_code=404, detail="Team member not found or not updated")
+        raise HTTPException(
+            status_code=404, detail="Team member not found or not updated"
+        )
     member = await team_member_service.get_team_member_by_id(team_member_id)
     return member
 
@@ -126,11 +146,13 @@ async def update_team_member(
 @router.delete("/team-member/{team_member_id}")
 async def delete_team_member(
     team_member_id: str,
-    team_member_service: TeamMemberService = Depends(get_team_member_service)
+    team_member_service: TeamMemberService = Depends(get_team_member_service),
 ):
     deleted = await team_member_service.delete_team_member(team_member_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail="Team member not found or not deleted")
+        raise HTTPException(
+            status_code=404, detail="Team member not found or not deleted"
+        )
     return {"detail": "Team member deleted successfully"}
 
 
@@ -138,7 +160,9 @@ async def delete_team_member(
 async def get_team_members(
     team_id: str,
     team_service: TeamService = Depends(get_team_service),
-    team_member_service: TeamMemberService = Depends(get_team_member_service)
+    team_member_service: TeamMemberService = Depends(get_team_member_service),
 ):
-    members = await team_service.get_team_members(team_id, team_member_service.team_member_repository)
+    members = await team_service.get_team_members(
+        team_id, team_member_service.team_member_repository
+    )
     return ResponseTeamMembersCollection(members=members)

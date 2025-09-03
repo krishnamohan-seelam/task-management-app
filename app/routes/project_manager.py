@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from app.models.task import (
     CreateTaskSchema,
-    ResponseTaskSchema,
+    TaskModel,
     AssignTaskSchema,
+    ResponseTaskSchema,
     ResponseTeamTaskViewCollection,
 )
+
 from app.models.team import (
     CreateTeamSchema,
     ResponseTeamSchema,
@@ -43,7 +45,7 @@ async def get_all_tasks(task_service: TaskService = Depends(get_task_service)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/task/{task_id}", response_model=ResponseTaskSchema)
+@router.get("/task/{task_id}", response_model=TaskModel)
 async def get_task(task_id: str, task_service: TaskService = Depends(get_task_service)):
     """
     Retrieve a task by its ID.
@@ -94,12 +96,13 @@ async def create_team_member(
 async def add_team_members(
     team_id: str,
     members: AddTeamMembersSchema,
+    team_lead_id: str,
     team_service: TeamService = Depends(get_team_service),
 ):
     """
     Assign existing members to a team.
     """
-    updated_team = await team_service.add_team_members(team_id, members)
+    updated_team = await team_service.add_team_members(team_id, members, team_lead_id)
     if not updated_team:
         raise HTTPException(status_code=400, detail="Adding team members failed")
     return updated_team
@@ -195,30 +198,18 @@ async def create_team(
     return created_team
 
 
-@router.post(
-    "/update-team", response_model=ResponseTeamSchema, response_model_by_alias=False
+@router.put(
+    "/update-team/{team_id}",
+    response_model=ResponseTeamSchema,
+    response_model_by_alias=False,
 )
 async def update_team(
     team_id: str,
     team: UpdateTeamSchema,
     team_service: TeamService = Depends(get_team_service),
 ):
+    logger.info(f"Updating team...{team}")
     created_team = await team_service.update_team(team_id=team_id, team_update=team)
     if not created_team:
         raise HTTPException(status_code=400, detail="Team update failed")
     return created_team
-
-
-@router.post(
-    "/team-member",
-    response_model=ResponseTeamMemberSchema,
-    response_model_by_alias=False,
-)
-async def create_team_member(
-    member: CreateTeamMemberSchema,
-    team_member_service: TeamMemberService = Depends(get_team_member_service),
-):
-    created_member = await team_member_service.create_team_member(member)
-    if not created_member:
-        raise HTTPException(status_code=400, detail="Team member creation failed")
-    return created_member

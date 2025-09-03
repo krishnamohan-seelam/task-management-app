@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchTeams, fetchTeamMembersByRole, createTeam, updateTeam, deleteTeam } from '../api';
-import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner,MenuItem } from '@blueprintjs/core';
+import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner, MenuItem } from '@blueprintjs/core';
 import { Select } from "@blueprintjs/select";
 
 
@@ -28,22 +28,22 @@ const ProjectManagerTeamsPage = () => {
     loadTeams();
     // eslint-disable-next-line
   }, []);
-  
+
   const loadProjectManagers = () => {
     if (!token) return;
     setLoading(true);
-    fetchTeamMembersByRole(token,PROJECT_MANAGER_ROLE)
+    fetchTeamMembersByRole(token, PROJECT_MANAGER_ROLE)
       .then(data => setProjectManagers(data.members || []))
       .catch(() => console.log('Failed to fetch project managers'))
       .finally(() => setLoading(false));
-    
+
   };
 
   useEffect(() => {
     loadProjectManagers();
     // eslint-disable-next-line
   }, []);
-  
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -57,9 +57,10 @@ const ProjectManagerTeamsPage = () => {
         const hasChanged =
           (originalTeam?.name !== form.name) ||
           (originalTeam?.project_manager !== form.project_manager &&
-           originalTeam?.project_manager_id !== form.project_manager);
+            originalTeam?.project_manager_id !== form.project_manager);
 
         if (hasChanged) {
+          console.log('Changes detected, calling updateTeam API.', editId, form);
           await updateTeam(token, editId, form);
         }
         else {
@@ -184,8 +185,8 @@ const ProjectManagerTeamsPage = () => {
                   )}
                 </span>
                 <span>
-                  <Button  icon="edit" intent="warning" onClick={() => handleEdit(team)} />
-                  <Button  icon="trash" intent="danger" onClick={() => handleDelete(team.team_id || team._id)} />
+                  <Button icon="edit" intent="warning" onClick={() => handleEdit(team)} />
+                  <Button icon="trash" intent="danger" onClick={() => handleDelete(team.team_id || team._id)} />
                 </span>
               </li>
             ))}

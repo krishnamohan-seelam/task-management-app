@@ -72,6 +72,26 @@ MONGODB_URL=<your_mongodb_connection_string>
 uvicorn app.main:app --reload
 ```
 
+## Running the Frontend (React)
+
+The frontend is built with React and Vite. To run the frontend locally:
+
+1. Open a new terminal and navigate to the `frontend` directory:
+    ```bash
+    cd frontend
+    ```
+2. Install dependencies:
+    ```bash
+    npm install
+    ```
+3. Start the development server:
+    ```bash
+    npm run dev
+    ```
+4. Open your browser and go to [http://localhost:3000](http://localhost:3000)
+
+The frontend will automatically reload on code changes. Make sure the backend (FastAPI) is running on port 8000 for API requests to work.
+
 ## API Endpoints
 
 ### Project Manager
@@ -111,7 +131,7 @@ uvicorn app.main:app --reload
 ## Architecture Flow Diagram
 
 ### Frontend-Backend Integration Flow
-``` mermaid
+```mermaid
 graph TB
 
     %% Services
@@ -145,19 +165,21 @@ graph TB
         N["/team-lead/*"]
         O["/team-member/*"]
         P["/auth/*"]
+        AB["CORS Middleware"]
     end
 
     %% React Frontend
-    subgraph "🌐 React Frontend (Port 3000)"
+    subgraph "🌐 React Frontend (Port 5173)"
         A["App.jsx"]
         B["LoginPage 🔐"]
         C["Dashboard 📊"]
-        D["API Layer 🛠️"]
+        D["API Layer (api.js) 🛠️"]
         E["Project Manager Pages 👨‍💼"]
         F["Team Lead Pages 👨‍💻"]
         G["Team Member Pages 👩‍💻"]
         H["NavigationHeader 🧭"]
         I["RequireAuth 🔒"]
+        J["localStorage (JWT)"]
     end
 
     %% Frontend Flow
@@ -171,10 +193,13 @@ graph TB
     E --> D
     F --> D
     G --> D
+    I --> J
 
     %% API Communication
-    D -->|HTTP Request| K
+    D -->|HTTP Request (Base URL: http://localhost:8000)| K
     K -->|JSON Response| D
+    D -->|Authorization: Bearer <token>| K
+    K --> AB
 
     %% Backend Flow
     K --> L
@@ -205,8 +230,15 @@ graph TB
     T --> Y
     U --> Z
     V --> AA
-
 ```
+#### Additional Notes
+
+- **Frontend Port**: Vite's default port is 5173. If you use a different port, update accordingly.
+- **API Base URL**: The frontend uses `http://localhost:8000` for API requests (see `frontend/src/api.js`).
+- **JWT Storage**: JWT tokens are stored in `localStorage` and sent in the `Authorization` header.
+- **CORS**: Ensure CORS is enabled in FastAPI for frontend-backend communication.
+- **Environment Variables**: Backend uses `.env` for MongoDB and other secrets. Frontend can use `.env` for custom config if needed.
+- **Frontend Build/Preview**: For production, use `npm run build` and `npm run preview` in the `frontend` directory.
 ### Key Integration Points
 
 #### 1. **Authentication Flow**

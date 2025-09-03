@@ -10,6 +10,7 @@ from app.models.team import (
 from app.repositories.team_repository import TeamRepository
 from typing import List, Optional, Dict
 from app.logging_config import logger
+from bson import ObjectId
 
 
 class TeamService:
@@ -89,9 +90,23 @@ class TeamService:
             HTTPException: If not found or update fails.
         """
         document = team_update.model_dump(exclude_unset=True)
+        # Convert project_manager to ObjectId if present and is a string
+        if "project_manager" in document and isinstance(
+            document["project_manager"], str
+        ):
+            try:
+                document["project_manager"] = ObjectId(document["project_manager"])
+            except Exception as e:
+                logger.error(f"Invalid project_manager ObjectId: {e}")
+                raise HTTPException(
+                    status_code=422, detail="Invalid project_manager ID"
+                )
+        logger.info(f"Updating team ID {team_id} with data: {document}")
         updated = await self.team_repository.update_team(team_id, document)
+        logger.info(f"Update result for team ID {team_id}: {updated}")
         if updated:
-            updated_team = await self.task_repository.get(team_id)
+            updated_team = await self.get_team(team_id)
+            logger.info(f"Updated team details: {updated_team}")
             return updated_team
         else:
             raise HTTPException(
