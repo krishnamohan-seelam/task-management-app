@@ -196,7 +196,7 @@ graph TB
     I --> J
 
     %% API Communication
-    D -->|HTTP Request (Base URL: http://localhost:8000)| K
+    D -->|HTTP Request| K
     K -->|JSON Response| D
     D -->|Authorization: Bearer <token>| K
     K --> AB
