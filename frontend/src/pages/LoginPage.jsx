@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../api';
+import { login as apiLogin } from '../api';
 import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner } from '@blueprintjs/core';
+import { useDispatch } from 'react-redux';
+import { login as loginAction } from '../userSlice';
 
 const LoginPage = () => {
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -18,11 +21,12 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
     try {
-      const data = await login(form);
-      localStorage.setItem('access_token', data.access_token);
+      const data = await apiLogin(form);
+
+      // localStorage.setItem('access_token', data.access_token); // Keep for API calls
       // Decode JWT for role (simple, not secure for prod)
       const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-      localStorage.setItem('role', payload.role);
+      dispatch(loginAction({ username: form.username, role: payload.role, access_token: data.access_token }));
       if (payload.role === 'project_manager') {
         navigate('/dashboard');
       } else if (payload.role === 'team_lead') {

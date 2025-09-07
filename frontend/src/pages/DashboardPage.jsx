@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { fetchTeams, fetchTasks, fetchAllTeamMembers } from '../api';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardData } from '../dashboardSlice';
 import {
   Card,
   Elevation,
@@ -20,23 +21,15 @@ import {
 import { EyeOpen } from '@blueprintjs/icons';
 
 const DashboardPage = () => {
-  const [teams, setTeams] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-
+  const dispatch = useDispatch();
+  const { teams, tasks, members, loading, error } = useSelector(state => state.dashboard);
+  const token = useSelector((state) => state.user.access_token);
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-    Promise.all([
-      fetchTeams(token).then(data => setTeams(data.teams || [])),
-      fetchTasks(token).then(data => setTasks(data.tasks || [])),
-      fetchAllTeamMembers(token).then(data => setMembers(data.members || [])),
-    ])
-      .catch(() => console.log('Failed to fetch dashboard data'))
-      .finally(() => setLoading(false));
-  }, []);
+
+    if (token) {
+      dispatch(fetchDashboardData(token));
+    }
+  }, [dispatch]);
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
@@ -49,7 +42,6 @@ const DashboardPage = () => {
   const getTeamMembers = (team) => {
     if (!team || !Array.isArray(team.members) || !Array.isArray(members)) return [];
     return team.members;
-
   };
 
   // Helper to get project manager

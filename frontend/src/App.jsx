@@ -17,11 +17,12 @@ import ProjectManagerUsersPage from './pages/ProjectManagerUsersPage';
 import ProjectManagerTasksPage from './pages/ProjectManagerTasksPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LogoutPage from './pages/LogoutPage';
-
+import { useSelector } from 'react-redux';
 // FocusStyleManager.onlyShowFocusOnTabs(); // Removed in v6
 
 function RequireAuth({ children }) {
-  const token = localStorage.getItem('access_token');
+  //const token = localStorage.getItem('access_token');
+  const token = useSelector((state) => state.user.access_token);
   const location = useLocation();
   if (!token) {
     return <Navigate to="/login" state={{ from: location }} replace />;

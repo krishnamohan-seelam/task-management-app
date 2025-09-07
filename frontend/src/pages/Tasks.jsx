@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { fetchTasks } from '../api';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardData } from '../dashboardSlice';
 
 function Tasks() {
-  const [tasks, setTasks] = useState([]);
-  const [error, setError] = useState('');
-
+  const dispatch = useDispatch();
+  const { tasks, error } = useSelector(state => state.dashboard);
+  const token = useSelector((state) => state.user.access_token);
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-    fetchTasks(token)
-      .then(data => setTasks(data.tasks || []))
-      .catch(() => setError('Failed to fetch tasks'));
-  }, []);
+
+    if (token) {
+      dispatch(fetchDashboardData(token));
+    }
+  }, [dispatch]);
 
   return (
     <div>

@@ -1,177 +1,107 @@
 import React, { useEffect, useState } from 'react';
-import { fetchTeams, fetchTeamMembersByRole, createTeam, updateTeam, deleteTeam } from '../api';
 import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner, MenuItem } from '@blueprintjs/core';
-import { Select } from "@blueprintjs/select";
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardData, createTeamThunk, editTeamThunk, deleteTeamThunk } from '../dashboardSlice';
 
 
 const ProjectManagerTeamsPage = () => {
-  const [teams, setTeams] = useState([]);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '' });
-  const [editId, setEditId] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [projectManagers, setProjectManagers] = useState([]);
-  const [originalTeam, setOriginalTeam] = useState(null);
-
-  const token = localStorage.getItem('access_token');
-  const PROJECT_MANAGER_ROLE = 'project_manager';
-  const loadTeams = () => {
-    if (!token) return;
-    setLoading(true);
-    fetchTeams(token)
-      .then(data => setTeams(data.teams || []))
-      .catch(() => console.log('Failed to fetch teams'))
-      .finally(() => setLoading(false));
-  };
+  const dispatch = useDispatch();
+  const { teams, members, loading, error } = useSelector(state => state.dashboard);
+  const token = useSelector((state) => state.user.access_token);
+  const [teamName, setTeamName] = useState('');
+  const [selectedManager, setSelectedManager] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [editTeamId, setEditTeamId] = useState(null);
 
   useEffect(() => {
-    loadTeams();
-    // eslint-disable-next-line
-  }, []);
+    if (token) {
+      dispatch(fetchDashboardData(token));
+    }
+  }, [dispatch, token]);
 
-  const loadProjectManagers = () => {
-    if (!token) return;
-    setLoading(true);
-    fetchTeamMembersByRole(token, PROJECT_MANAGER_ROLE)
-      .then(data => setProjectManagers(data.members || []))
-      .catch(() => console.log('Failed to fetch project managers'))
-      .finally(() => setLoading(false));
+  // Project managers can be filtered from members
+  const projectManagers = members.filter(m => m.role === 'project_manager');
 
-  };
-
-  useEffect(() => {
-    loadProjectManagers();
-    // eslint-disable-next-line
-  }, []);
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
+  // Handle create/edit team
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      if (editId) {
-        // Compare form with originalTeam for changes
-        const hasChanged =
-          (originalTeam?.name !== form.name) ||
-          (originalTeam?.project_manager !== form.project_manager &&
-            originalTeam?.project_manager_id !== form.project_manager);
-
-        if (hasChanged) {
-          console.log('Changes detected, calling updateTeam API.', editId, form);
-          await updateTeam(token, editId, form);
-        }
-        else {
-          console.log('No changes detected, updateTeam API not called.');
-        }
-        // else: no API call if nothing changed
-      } else {
-        await createTeam(token, form);
-      }
-      setForm({ name: '' });
-      setEditId(null);
-      setOriginalTeam(null);
-      loadTeams();
-    } catch {
-      setError('Failed to save team');
-    } finally {
-      setLoading(false);
+    if (!teamName || !selectedManager) return;
+    const managerObj = projectManagers.find(pm => pm.user_id === selectedManager || pm.member_id === selectedManager);
+    const teamPayload = {
+      name: teamName,
+      project_manager: selectedManager,
+      project_manager_name: managerObj ? managerObj.name : '',
+    };
+    if (editMode && editTeamId) {
+      dispatch(editTeamThunk({ token, teamId: editTeamId, team: teamPayload }));
+    } else {
+      dispatch(createTeamThunk({ token, team: teamPayload }));
     }
+    setTeamName('');
+    setSelectedManager('');
+    setEditMode(false);
+    setEditTeamId(null);
   };
 
+  // Handle edit button click
   const handleEdit = (team) => {
-    setForm({
-      name: team.name,
-      project_manager: team.project_manager || team.project_manager_id || ''
-    });
-    setEditId(team.team_id || team._id);
-    setOriginalTeam({
-      name: team.name,
-      project_manager: team.project_manager || team.project_manager_id || ''
-    });
+    setEditMode(true);
+    setEditTeamId(team.team_id || team._id);
+    setTeamName(team.name);
+    setSelectedManager(team.project_manager_id || '');
   };
 
-  const handleDelete = async (id) => {
-    setLoading(true);
-    try {
-      await deleteTeam(token, id);
-      loadTeams();
-    } catch {
-      setError('Failed to delete team');
-    } finally {
-      setLoading(false);
+  // Handle delete
+  const handleDelete = (teamId) => {
+    dispatch(deleteTeamThunk({ token, teamId }));
+    // Optionally reset form if deleting the team being edited
+    if (editMode && editTeamId === teamId) {
+      setTeamName('');
+      setSelectedManager('');
+      setEditMode(false);
+      setEditTeamId(null);
     }
-  };
-
-  // Helper for Select
-  const renderPM = (pm, { handleClick, modifiers }) => (
-    <MenuItem
-      key={pm.member_id || pm._id}
-      text={pm.name}
-      onClick={handleClick}
-      active={modifiers.active}
-      style={{ width: '100%', textAlign: 'left' }}
-    />
-  );
-  const filterPM = (query, pm) =>
-    pm.name.toLowerCase().indexOf(query.toLowerCase()) >= 0;
-
-  const handlePMSelect = (pm) => {
-    setForm({ ...form, project_manager: pm.member_id || pm._id });
   };
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', minHeight: '80vh', background: '#f5f8fa' }}>
       <Card elevation={Elevation.TWO} style={{ width: 500, marginTop: 40, padding: 32 }}>
         <h2 style={{ textAlign: 'left', marginBottom: 24 }}>All Teams</h2>
-        <form onSubmit={handleSubmit} style={{ marginBottom: 24, textAlign: 'left' }}>
-          <FormGroup label="Team Name" labelFor="team-name-input">
-            <InputGroup
-              id="team-name-input"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Enter team name"
-              required
-            />
-          </FormGroup>
-          <FormGroup label="Project Manager" labelFor="project-manager-select">
-            <Select
-              id="project-manager-select"
-              items={projectManagers}
-              itemRenderer={renderPM}
-              itemPredicate={filterPM}
-              onItemSelect={handlePMSelect}
-              noResults={<Button disabled text="No project managers found" />}
-              popoverProps={{ minimal: true }}
-              filterable={true}
-            >
-              <Button
-                text={
-                  (() => {
-                    const selected = projectManagers.find(pm => (pm.member_id || pm._id) === form.project_manager);
-                    return selected ? selected.name : "Select project manager";
-                  })()
-                }
-                style={{ width: '100%', textAlign: 'left' }}
-              />
-            </Select>
-          </FormGroup>
-          <Button type="submit" intent={editId ? 'warning' : 'primary'} large style={{ marginRight: 8 }} disabled={loading}>
-            {editId ? 'Update' : 'Create'} Team
-          </Button>
-          {editId && (
-            <Button
-              type="button"
-              onClick={() => { setEditId(null); setForm({ name: '', project_manager: '' }); setOriginalTeam(null); }}
-            >
-              Cancel
-            </Button>
-          )}
-        </form>
         {error && <Callout intent="danger" style={{ marginBottom: 16, textAlign: 'left' }}>{error}</Callout>}
+        <form onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
+          <FormGroup label={editMode ? 'Edit Team' : 'Create Team'} labelFor="team-name">
+            <InputGroup
+              id="team-name"
+              placeholder="Team Name"
+              value={teamName}
+              onChange={e => setTeamName(e.target.value)}
+              style={{ marginBottom: 8 }}
+            />
+            <FormGroup label="Project Manager" labelFor="manager-select">
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <select
+                  id="manager-select"
+                  value={selectedManager}
+                  onChange={e => setSelectedManager(e.target.value)}
+                  style={{ width: '100%', padding: '8px' }}
+                >
+                  <option value="">Select Manager</option>
+                  {projectManagers.map(pm => (
+                    <option key={pm.user_id || pm.member_id} value={pm.user_id || pm.member_id}>{pm.name}</option>
+                  ))}
+                </select>
+              </div>
+            </FormGroup>
+            <Button type="submit" intent={editMode ? 'primary' : 'success'} style={{ marginTop: 8 }}>
+              {editMode ? 'Update Team' : 'Create Team'}
+            </Button>
+            {editMode && (
+              <Button style={{ marginLeft: 8 }} onClick={() => { setEditMode(false); setTeamName(''); setSelectedManager(''); setEditTeamId(null); }}>
+                Cancel
+              </Button>
+            )}
+          </FormGroup>
+        </form>
         {loading ? <Spinner /> : (
           <ul style={{ listStyle: 'none', padding: 0, textAlign: 'left' }}>
             {teams.map(team => (
@@ -185,8 +115,18 @@ const ProjectManagerTeamsPage = () => {
                   )}
                 </span>
                 <span>
-                  <Button icon="edit" intent="warning" onClick={() => handleEdit(team)} />
-                  <Button icon="trash" intent="danger" onClick={() => handleDelete(team.team_id || team._id)} />
+                  <Button
+                    icon="edit"
+                    variant="minimal"
+                    onClick={() => handleEdit(team)}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Button
+                    icon="trash"
+                    variant="minimal"
+                    intent="danger"
+                    onClick={() => handleDelete(team.team_id || team._id)}
+                  />
                 </span>
               </li>
             ))}

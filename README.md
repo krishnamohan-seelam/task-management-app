@@ -179,7 +179,6 @@ graph TB
         G["Team Member Pages 👩‍💻"]
         H["NavigationHeader 🧭"]
         I["RequireAuth 🔒"]
-        J["localStorage (JWT)"]
     end
 
     %% Frontend Flow
@@ -235,7 +234,6 @@ graph TB
 
 - **Frontend Port**: Vite's default port is 5173. If you use a different port, update accordingly.
 - **API Base URL**: The frontend uses `http://localhost:8000` for API requests (see `frontend/src/api.js`).
-- **JWT Storage**: JWT tokens are stored in `localStorage` and sent in the `Authorization` header.
 - **CORS**: Ensure CORS is enabled in FastAPI for frontend-backend communication.
 - **Environment Variables**: Backend uses `.env` for MongoDB and other secrets. Frontend can use `.env` for custom config if needed.
 - **Frontend Build/Preview**: For production, use `npm run build` and `npm run preview` in the `frontend` directory.
@@ -244,7 +242,7 @@ graph TB
 #### 1. **Authentication Flow**
 - **Frontend**: `LoginPage.jsx` → `api.js` → `login()` function
 - **Backend**: `POST /auth/login` → JWT token generation
-- **Storage**: Token stored in `localStorage` for subsequent requests
+
 
 #### 2. **Role-Based Access**
 - **Frontend**: `RequireAuth` component checks for valid token
@@ -291,7 +289,6 @@ MongoDB teams collection
 
 #### 5. **State Management**
 - **Local State**: React `useState` for component-level data
-- **Token Storage**: `localStorage` for authentication persistence
 - **Real-time Updates**: Manual refresh after CRUD operations
 
 ## Code Documentation

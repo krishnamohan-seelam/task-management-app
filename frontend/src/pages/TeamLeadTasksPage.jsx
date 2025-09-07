@@ -1,87 +1,78 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner } from '@blueprintjs/core';
-import { fetchTasks, createTask, updateTask, deleteTask } from '../api';
+import { getTasksTL, assignTaskTL, updateTaskTL, trackTasksTL } from '../api';
 
 const TeamLeadTasksPage = () => {
   const [tasks, setTasks] = useState([]);
-  const [form, setForm] = useState({ title: '', description: '' });
-  const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const token = localStorage.getItem('access_token');
-
-  const loadTasks = () => {
-    if (!token) return;
-    setLoading(true);
-    fetchTasks(token)
-      .then(data => setTasks(data.tasks || []))
-      .catch(() => setError('Failed to fetch tasks'))
-      .finally(() => setLoading(false));
-  };
+  const [error, setError] = useState(null);
+  const [assignData, setAssignData] = useState({ taskId: '', userId: '' });
+  const [updateData, setUpdateData] = useState({ taskId: '', status: '' });
 
   useEffect(() => {
-    loadTasks();
-    // eslint-disable-next-line
+    fetchTasks();
   }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const fetchTasks = async () => {
     setLoading(true);
+    setError(null);
     try {
-      if (editId) {
-        await updateTask(token, editId, form);
-      } else {
-        await createTask(token, form);
-      }
-      setForm({ title: '', description: '' });
-      setEditId(null);
-      loadTasks();
-    } catch {
-      setError('Failed to save task');
+      const res = await getTasksTL();
+      setTasks(res.data);
+    } catch (err) {
+      setError('Failed to fetch tasks');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (task) => {
-    setForm({ title: task.title || task.name, description: task.description || '' });
-    setEditId(task.id || task._id);
+  const handleAssignTask = async (e) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      await assignTaskTL(assignData);
+      setAssignData({ taskId: '', userId: '' });
+      fetchTasks();
+    } catch (err) {
+      setError('Failed to assign task');
+    }
   };
 
-  const handleDelete = async (id) => {
-    setLoading(true);
+  const handleUpdateTask = async (e) => {
+    e.preventDefault();
+    setError(null);
     try {
-      await deleteTask(token, id);
-      loadTasks();
-    } catch {
-      setError('Failed to delete task');
-    } finally {
-      setLoading(false);
+      await updateTaskTL(updateData.taskId, { status: updateData.status });
+      setUpdateData({ taskId: '', status: '' });
+      fetchTasks();
+    } catch (err) {
+      setError('Failed to update task');
     }
   };
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', minHeight: '80vh', background: '#f5f8fa' }}>
       <Card elevation={Elevation.TWO} style={{ width: 600, marginTop: 40, padding: 32 }}>
-        <h2 style={{ textAlign: 'center', marginBottom: 24 }}>Team Tasks</h2>
-        <form onSubmit={handleSubmit} style={{ marginBottom: 24, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <FormGroup label="Title" labelFor="task-title-input" style={{ flex: 1 }}>
-            <InputGroup id="task-title-input" name="title" value={form.title} onChange={handleChange} placeholder="Title" required large />
-          </FormGroup>
-          <FormGroup label="Description" labelFor="task-desc-input" style={{ flex: 2 }}>
-            <InputGroup id="task-desc-input" name="description" value={form.description} onChange={handleChange} placeholder="Description" large />
-          </FormGroup>
-          <Button type="submit" intent={editId ? 'warning' : 'primary'} large style={{ marginTop: 24, minWidth: 120 }} disabled={loading}>
-            {editId ? 'Update' : 'Create'} Task
-          </Button>
-          {editId && <Button type="button" onClick={() => { setEditId(null); setForm({ title: '', description: '' }); }} large style={{ marginTop: 24 }}>Cancel</Button>}
-        </form>
+        <h2 style={{ textAlign: 'center', marginBottom: 24 }}>Team Lead: Tasks</h2>
         {error && <Callout intent="danger" style={{ marginBottom: 16 }}>{error}</Callout>}
+        <form onSubmit={handleAssignTask} style={{ marginBottom: 24 }}>
+          <FormGroup label="Task ID" labelFor="assign-task-id">
+            <InputGroup id="assign-task-id" value={assignData.taskId} onChange={e => setAssignData({ ...assignData, taskId: e.target.value })} placeholder="Task ID" required />
+          </FormGroup>
+          <FormGroup label="User ID" labelFor="assign-user-id">
+            <InputGroup id="assign-user-id" value={assignData.userId} onChange={e => setAssignData({ ...assignData, userId: e.target.value })} placeholder="User ID" required />
+          </FormGroup>
+          <Button type="submit" intent="success">Assign Task</Button>
+        </form>
+        <form onSubmit={handleUpdateTask} style={{ marginBottom: 24 }}>
+          <FormGroup label="Task ID" labelFor="update-task-id">
+            <InputGroup id="update-task-id" value={updateData.taskId} onChange={e => setUpdateData({ ...updateData, taskId: e.target.value })} placeholder="Task ID" required />
+          </FormGroup>
+          <FormGroup label="Status" labelFor="update-status">
+            <InputGroup id="update-status" value={updateData.status} onChange={e => setUpdateData({ ...updateData, status: e.target.value })} placeholder="Status" required />
+          </FormGroup>
+          <Button type="submit" intent="primary">Update Task</Button>
+        </form>
         {loading ? <Spinner /> : (
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {tasks.map(task => (
@@ -89,10 +80,6 @@ const TeamLeadTasksPage = () => {
                 <span>
                   <strong>{task.title || task.name}</strong>
                   {task.description && <span style={{ color: '#888', fontSize: 14 }}> — {task.description}</span>}
-                </span>
-                <span>
-                  <Button minimal icon="edit" intent="warning" onClick={() => handleEdit(task)} />
-                  <Button minimal icon="trash" intent="danger" onClick={() => handleDelete(task.id || task._id)} />
                 </span>
               </li>
             ))}

@@ -1,0 +1,34 @@
+---
+applyTo: "**/*.py"
+---
+# Project coding standards for Python
+- Follow the PEP 8 style guide for Python.
+- Always prioritize readability and clarity.
+- Write clear and concise comments for each function.
+- Ensure functions have descriptive names and include type hints.
+- Maintain proper indentation (use 4 spaces for each level of indentation).
+- Use docstrings to describe the purpose and usage of classes and functions.
+- Avoid using global variables; prefer passing parameters and returning values.
+- Write unit tests for all functions and ensure they pass before committing code.
+- Use meaningful variable names that convey the purpose of the variable.
+- Limit lines to a maximum of 79 characters for better readability.
+- Use list comprehensions and generator expressions where appropriate for cleaner code.
+- Handle exceptions gracefully and provide informative error messages.
+- Regularly refactor code to improve efficiency and maintainability.
+- Use virtual environments to manage project dependencies.
+- Document any third-party libraries or frameworks used in the project.
+- Ensure consistent naming conventions (e.g., snake_case for variables and functions, PascalCase for classes).
+- Avoid deep nesting of code; break down complex functions into smaller, manageable ones.
+- Use logging instead of print statements for tracking application flow and debugging.
+- Regularly review and update the coding standards as the project evolves.
+- Collaborate with team members to ensure adherence to coding standards and best practices.
+- Use version control (e.g., Git) effectively, with clear commit messages and branching strategies.
+- Participate in code reviews to maintain code quality and share knowledge among team members.
+- Stay updated with the latest Python features and best practices by following relevant blogs, forums, and official documentation.
+- Use type hinting to improve code clarity and facilitate static analysis.
+- Ensure that all code is compatible with the project's specified Python version.
+- Avoid using wildcard imports (e.g., from module import *) to prevent namespace pollution.
+- Use f-strings for string formatting for better performance and readability (Python 3.6+).
+- Regularly run linters (e.g., pylint, flake8) to catch potential issues early in the development process.
+- Write modular code by breaking down functionality into smaller, reusable functions and classes.
+- Ensure that all dependencies are listed in a requirements.txt or equivalent file for easy setup.

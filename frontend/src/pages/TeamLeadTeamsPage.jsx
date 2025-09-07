@@ -1,21 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card, Elevation, Button, Callout, Spinner } from '@blueprintjs/core';
-import { fetchTeams } from '../api';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardData } from '../dashboardSlice';
 
 const TeamLeadTeamsPage = () => {
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
+  const dispatch = useDispatch();
+  const { teams, loading, error } = useSelector(state => state.dashboard);
+  const token = useSelector((state) => state.user.access_token);
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-    setLoading(true);
-    fetchTeams(token)
-      .then(data => setTeams(data.teams || []))
-      .catch(() => setError('Failed to fetch teams'))
-      .finally(() => setLoading(false));
-  }, []);
+
+    if (token) {
+      dispatch(fetchDashboardData(token));
+    }
+  }, [dispatch]);
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', minHeight: '80vh', background: '#f5f8fa' }}>

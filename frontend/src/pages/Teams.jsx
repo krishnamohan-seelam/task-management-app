@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { fetchTeams } from '../api';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchDashboardData } from '../dashboardSlice';
 
 function Teams() {
-  const [members, setMembers] = useState([]);
-  const [error, setError] = useState('');
-
+  const dispatch = useDispatch();
+  const { members, error } = useSelector(state => state.dashboard);
+  const token = useSelector((state) => state.user.access_token);
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-    fetchTeams(token)
-      .then(data => setMembers(data.members || []))
-      .catch(() => setError('Failed to fetch team members'));
-  }, []);
+    if (token) {
+      dispatch(fetchDashboardData(token));
+    }
+  }, [dispatch]);
 
   return (
     <div>

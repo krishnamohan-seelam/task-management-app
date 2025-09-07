@@ -1,37 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Elevation, Button, Callout, Spinner } from '@blueprintjs/core';
-import { fetchTasks, updateTask } from '../api';
+import { getTasksTM, updateTaskTM } from '../api';
 
 const TeamMemberTasksPage = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const token = localStorage.getItem('access_token');
-
-  const loadTasks = () => {
-    if (!token) return;
-    setLoading(true);
-    fetchTasks(token)
-      .then(data => setTasks(data.tasks || []))
-      .catch(() => setError('Failed to fetch tasks'))
-      .finally(() => setLoading(false));
-  };
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadTasks();
-    // eslint-disable-next-line
+    fetchTasks();
   }, []);
 
-  const handleMarkComplete = async (task) => {
+  const fetchTasks = async () => {
     setLoading(true);
+    setError(null);
     try {
-      await updateTask(token, task.id || task._id, { ...task, status: 'completed' });
-      loadTasks();
-    } catch {
-      setError('Failed to update task');
+      const res = await getTasksTM();
+      setTasks(res.data);
+    } catch (err) {
+      setError('Failed to fetch tasks');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMarkComplete = async (taskId) => {
+    setError(null);
+    try {
+      await updateTaskTM(taskId, { status: 'completed' });
+      fetchTasks();
+    } catch (err) {
+      setError('Failed to update task');
     }
   };
 
@@ -49,7 +48,7 @@ const TeamMemberTasksPage = () => {
                   {task.status === 'completed' && <span style={{ color: 'green', marginLeft: 8 }}>(Completed)</span>}
                 </span>
                 {task.status !== 'completed' && (
-                  <Button minimal icon="tick" intent="success" onClick={() => handleMarkComplete(task)}>
+                  <Button intent="success" small onClick={() => handleMarkComplete(task.id || task._id)}>
                     Mark Complete
                   </Button>
                 )}

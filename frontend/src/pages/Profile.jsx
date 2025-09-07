@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { login } from '../api';
+import { login as apiLogin } from '../api';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { login, logout } from '../userSlice';
 
 function Profile() {
   const [form, setForm] = useState({ username: '', password: '' });
-  const [token, setToken] = useState(null);
   const [error, setError] = useState('');
-  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector(state => state.user);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -17,19 +19,17 @@ function Profile() {
     e.preventDefault();
     setError('');
     try {
-      const data = await login({ username: form.username, password: form.password });
-      setToken(data.access_token);
-      localStorage.setItem('access_token', data.access_token); // Save token for other pages
-      // Decode JWT for user info (simple, not secure for prod)
+      const data = await apiLogin({ username: form.username, password: form.password });
+      //localStorage.setItem('access_token', data.access_token);
       const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-      setUser({ id: payload.sub, role: payload.role });
+      dispatch(login({ username: form.username, role: payload.role, access_token: data.access_token }));
       // Redirect based on role
       if (payload.role === 'project_manager') {
         navigate('/tasks');
       } else if (payload.role === 'team_member') {
         navigate('/teams');
       } else if (payload.role === 'team_lead') {
-        navigate('/profile'); // Change to your team lead page if exists
+        navigate('/profile');
       } else {
         navigate('/');
       }
@@ -38,7 +38,7 @@ function Profile() {
     }
   };
 
-  if (!token) {
+  if (!isAuthenticated) {
     return (
       <div>
         <h1>Profile Page</h1>
@@ -61,9 +61,9 @@ function Profile() {
   return (
     <div>
       <h1>Profile Page</h1>
-      <div>Logged in as: <b>{form.username}</b></div>
+      <div>Logged in as: <b>{user?.username}</b></div>
       <div>Role: <b>{user?.role}</b></div>
-      <button onClick={() => { setToken(null); setUser(null); setForm({ username: '', password: '' }); localStorage.removeItem('access_token'); }}>Logout</button>
+      <button onClick={() => { dispatch(logout()); setForm({ username: '', password: '' }); localStorage.removeItem('access_token'); }}>Logout</button>
     </div>
   );
 }
