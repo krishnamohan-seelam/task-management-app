@@ -1,5 +1,7 @@
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import LogoutPage from '../src/pages/LogoutPage';
+
 
 describe('LogoutPage', () => {
     it('renders logout message', () => {

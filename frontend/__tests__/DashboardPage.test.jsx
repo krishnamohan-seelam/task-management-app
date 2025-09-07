@@ -1,6 +1,8 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DashboardPage from '../src/pages/DashboardPage';
 import * as api from '../src/api';
+
 
 jest.mock('../src/api');
 

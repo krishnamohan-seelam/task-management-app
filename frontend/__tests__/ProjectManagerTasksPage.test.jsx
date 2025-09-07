@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProjectManagerTasksPage from '../src/pages/ProjectManagerTasksPage';
 import * as api from '../src/api';

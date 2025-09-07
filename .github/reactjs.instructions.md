@@ -163,3 +163,11 @@ Instructions for building high-quality ReactJS applications with modern patterns
 - Provider pattern for context-based state sharing
 - Container/Presentational component separation
 - Custom hooks for reusable logic extraction
+
+### Testing Instructions
+**Setup Environment**: Ensure you have a React JS application set up with Jest and React Testing Library installed. Familiarize yourself with the application's components, state management (e.g., Redux, Context API), and any third-party libraries used.
+**Example Prompt**:
+"Generate a suite of test cases for a React JS application that includes components for user authentication, data fetching, and form handling. Ensure tests cover valid and invalid inputs, error handling, state management, and UI interactions. Use Jest and React Testing Library for the tests, and provide mock data for API calls. Include code coverage reports and examples of test execution."
+**Note**: Tailor the prompt to the specific React JS application and its components for more accurate and relevant test cases.  Ensure to include any specific libraries or tools used in the project for testing and state management.
+**Example Prompt**:
+"Generate a suite of test cases for a React JS application that includes components for user authentication,  data fetching, and form handling. Ensure tests cover valid and invalid inputs, error handling, state management, and UI interactions. Use Jest and React Testing Library for the tests, and provide mock data for API calls. Include code coverage reports and examples of test execution.

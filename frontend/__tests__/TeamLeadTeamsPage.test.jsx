@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TeamLeadTeamsPage from '../src/pages/TeamLeadTeamsPage';
 import * as api from '../src/api';
