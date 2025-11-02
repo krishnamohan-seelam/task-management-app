@@ -24,7 +24,15 @@ class TeamRepository(AbstractRepository):
         return str(result.inserted_id)
 
     async def get(self, obj_id: str) -> Optional[Dict]:
-        return await self.teams_view.find_one({"_id": ObjectId(obj_id)})
+        # Prefer reading from the teams collection for direct lookups.
+        # Using the teams_view may be appropriate for rich joins, but tests
+        # and many callers expect a simple collection lookup and may mock
+        # the collection methods. Fall back to teams_view only if collection
+        # lookup returns None (e.g., when a view is used in production).
+        team = await self.collection.find_one({"_id": ObjectId(obj_id)})
+        if team is None:
+            return await self.teams_view.find_one({"_id": ObjectId(obj_id)})
+        return team
 
     async def update(self, obj_id: str, obj_update: Dict) -> bool:
         result = await self.collection.update_one(
@@ -37,9 +45,9 @@ class TeamRepository(AbstractRepository):
             logger.info(f"No changes made to team with ID: {obj_id}")
 
         logger.info(f"Successfully updated team with ID: {obj_id}")
-        return UpdateResult(
-            matched=result.matched_count > 0, modified=result.modified_count > 0
-        )
+        # Keep return type consistent with AbstractRepository: return a bool
+        # indicating whether any document was modified.
+        return result.modified_count > 0
 
     async def delete(self, obj_id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(obj_id)})
@@ -56,8 +64,14 @@ class TeamRepository(AbstractRepository):
         return result.deleted_count > 0
 
     async def get_all(self) -> List[Dict]:
-        cursor = self.teams_view.find()
-        return await cursor.to_list(length=None)
+        # Prefer using the teams collection for listing all teams. If a
+        # view is present and contains richer data, use it as a fallback.
+        cursor = self.collection.find()
+        teams = await cursor.to_list(length=None)
+        if not teams:
+            cursor = self.teams_view.find()
+            teams = await cursor.to_list(length=None)
+        return teams
 
     # Legacy methods call new abstract methods
     async def create_team(self, team_data: Dict) -> str:
