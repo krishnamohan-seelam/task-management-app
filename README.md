@@ -2,6 +2,8 @@
 
 A collaborative task management system built with FastAPI and MongoDB. Designed for teams, it enables project managers to assign tasks, team leads to delegate and monitor, and team members to update progress.
 
+The object of this project is to learn integration of fast api , mongo db & react js. we may encounter errors on executing code.
+
 ## UI Sample
 
 Here is a sample of the application's dashboard:
@@ -296,4 +298,4 @@ MongoDB teams collection
 All modules and methods include up-to-date docstrings describing their purpose, arguments, return values, and exceptions. See the code for details.
 ## Code Documentation
 
-All modules and methods include up-to-date docstrings describing their purpose, arguments, return values, and exceptions. See the code for details.
+All modules and methods include up-to-date docstrings describing their purpose, arguments, return values, and exceptions. See the code for details.  
