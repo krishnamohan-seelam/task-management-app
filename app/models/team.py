@@ -70,7 +70,7 @@ class TeamMemberModel(BaseModel):
         validate_by_name=True,
         populate_by_name=True,
         arbitrary_types_allowed=True,
-        extra="forbid",
+        extra="allow",
         json_schema_extra={
             "str_strip_whitespace": True,
             "str_min_length": 1,
@@ -109,7 +109,7 @@ class TeamModel(BaseModel):
     model_config = ConfigDict(
         validate_by_name=True,
         arbitrary_types_allowed=True,
-        extra="forbid",
+        extra="allow",
         json_schema_extra={"str_strip_whitespace": True},
     )
 
@@ -237,6 +237,7 @@ class ResponseTeamMemberSchema(BaseModel):
         arbitrary_types_allowed=True,
         use_enum_values=True,
         validate_assignment=True,
+        extra="allow",
         json_schema_extra={
             "str_strip_whitespace": True,
             "str_min_length": 1,
@@ -258,4 +259,4 @@ class ResponseTeamCollection(BaseModel):
     Schema for returning a list of teams in API responses.
     """
 
-    teams: Optional[List[TeamSchema]]
+    teams: Optional[List[ResponseTeamSchema]]

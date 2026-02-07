@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner } from '@blueprintjs/core';
-import { getAllTasksPM, createTask, assignTaskPM } from '../api';
+import { getAllTasksPM, createTaskPM, assignTaskPM } from '../api';
 import { useDispatch, useSelector } from 'react-redux';
 const ProjectManagerTasksPage = () => {
   const [tasks, setTasks] = useState([]);
@@ -32,11 +32,11 @@ const ProjectManagerTasksPage = () => {
     e.preventDefault();
     setError(null);
     try {
-      await createTask(newTask);
+      await createTaskPM(newTask);
       setNewTask({ title: '', description: '' });
       fetchTasks();
     } catch (err) {
-      setError('Failed to create task');
+      setError('Project Managers cannot create task');
     }
   };
 
@@ -47,7 +47,7 @@ const ProjectManagerTasksPage = () => {
       await assignTaskPM(assignData);
       setAssignData({ taskId: '', userId: '' });
     } catch (err) {
-      setError('Failed to assign task');
+      setError('Project Managers cannot assign task');
     }
   };
 

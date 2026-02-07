@@ -4,11 +4,7 @@ import axios from 'axios';
 const API_BASE = 'http://localhost:8000';
 // Project Manager Endpoints
 //export const createTask = (data) => axios.post(`${API_BASE}/project-manager/tasks/`, data);
-export const assignTaskPM = (data, token) => axios.post(
-  `${API_BASE}/project-manager/assign-task`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
+
 export const getAllTasksPM = (token) => {
   console.log(`${API_BASE}/project-manager/tasks`);
   return axios.get(
@@ -40,11 +36,33 @@ export const getTeamMembersPM = (teamId, token) => teamId
   : axios.get(`${API_BASE}/project-manager/team-members`, { headers: { Authorization: `Bearer ${token}` } });
 
 // Team Lead Endpoints
-export const assignTaskTL = (data, token) => axios.post(
-  `${API_BASE}/team-lead/assign-task`,
+export const createTask = (data, token) => axios.post(
+  `${API_BASE}/team-lead/tasks/`,
   data,
-  { headers: { Authorization: `Bearer ${token}` } }
+  { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
 );
+
+// assignTask expects { user_id: "...", ... } body and taskId provided in data.taskId
+export const assignTaskTL = (data, token) => {
+  const taskId = data.taskId;
+  const body = { ...data };
+  delete body.taskId;
+  return axios.post(
+    `${API_BASE}/team-lead/assign-task/${encodeURIComponent(taskId)}`,
+    body,
+    { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+  );
+};
+
+// Keep or remove project-manager wrappers that previously allowed create/assign.
+// If present, make them explicit no-ops or throw to avoid accidental use:
+export const createTaskPM = () => {
+  throw new Error("Project managers are not allowed to create tasks. Use team-lead UI.");
+};
+export const assignTaskPM = () => {
+  throw new Error("Project managers are not allowed to assign tasks. Use team-lead UI.");
+};
+
 export const getTasksTL = (token) => axios.get(
   `${API_BASE}/team-lead/tasks`,
   { headers: { Authorization: `Bearer ${token}` } }
@@ -272,7 +290,7 @@ export async function deleteUser(token, userId) {
 
 // Tasks
 
-export async function createTask(token, task) {
+/* export async function createTask(token, task) {
   try {
     const res = await axios.post(
       `${API_BASE}/project-manager/tasks`,
@@ -284,7 +302,7 @@ export async function createTask(token, task) {
     throw new Error('Failed to create task');
   }
 }
-
+ */
 
 export async function updateTask(token, taskId, task) {
   try {

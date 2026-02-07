@@ -213,3 +213,33 @@ async def update_team(
     if not created_team:
         raise HTTPException(status_code=400, detail="Team update failed")
     return created_team
+
+
+@router.post("/tasks/", response_model=TaskModel, response_model_by_alias=False)
+async def create_task(
+    task: CreateTaskSchema, task_service: TaskService = Depends(get_task_service)
+):
+    """
+    Disabled for project managers. Task creation must be done by team leads.
+    """
+    raise HTTPException(
+        status_code=403,
+        detail="Forbidden: Project managers cannot create tasks. Use team-lead endpoints (/team-lead/tasks/) instead.",
+    )
+
+
+@router.post(
+    "/assign-task/{task_id}", response_model=TaskModel, response_model_by_alias=False
+)
+async def assign_task(
+    task_id: str,
+    task: AssignTaskSchema,
+    task_service: TaskService = Depends(get_task_service),
+):
+    """
+    Disabled for project managers. Task assignment must be done by team leads.
+    """
+    raise HTTPException(
+        status_code=403,
+        detail="Forbidden: Project managers cannot assign tasks. Use team-lead endpoints (/team-lead/assign-task/{task_id}) instead.",
+    )
