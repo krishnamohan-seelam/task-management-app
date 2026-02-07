@@ -65,6 +65,7 @@ async def setup_mock_db(db):
         "name": "Test Member",
         "email": "test@example.com",
         "role": "developer",
+        "hashed_password": "hashed_secret",
         "teams": [mock_team_id]
     })
 

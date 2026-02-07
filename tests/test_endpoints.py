@@ -19,7 +19,7 @@ async def test_create_task(team_lead_client):
 
 @pytest.mark.asyncio
 async def test_create_team_member(project_manager_client):
-    data = {"name": "John", "email": "john@example.com", "role": "developer"}
+    data = {"name": "John", "email": "john@example.com", "role": "developer", "password": "password123"}
     response = project_manager_client.post("/project-manager/team-member", json=data)
     assert response.status_code == 200
     assert response.json()["name"] == "John"

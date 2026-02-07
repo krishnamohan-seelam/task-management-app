@@ -1,330 +1,104 @@
 import axios from 'axios';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-const API_BASE = 'http://localhost:8000';
-// Project Manager Endpoints
-//export const createTask = (data) => axios.post(`${API_BASE}/project-manager/tasks/`, data);
+const apiClient = axios.create({
+  baseURL: API_BASE,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-export const getAllTasksPM = (token) => {
-  console.log(`${API_BASE}/project-manager/tasks`);
-  return axios.get(
-    `${API_BASE}/project-manager/tasks`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+// Request interceptor to add the auth token header to requests
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for handling common errors (optional)
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Optionally handle 401 unauthorized (e.g., redirect to login)
+    // if (error.response && error.response.status === 401) {
+    //   window.location.href = '/login'; 
+    // }
+    return Promise.reject(error);
+  }
+);
+
+
+// Auth
+export const login = async ({ username, password }) => {
+  const params = new URLSearchParams();
+  params.append('username', username);
+  params.append('password', password);
+  const response = await apiClient.post('/auth/login', params, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  });
+  return response.data;
 };
-export const getTaskByIdPM = (taskId, token) => axios.get(
-  `${API_BASE}/project-manager/task/${taskId}`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const createTeamMemberPM = (data, token) => axios.post(
-  `${API_BASE}/project-manager/team-member`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const addTeamMembersPM = (data, token) => axios.post(
-  `${API_BASE}/project-manager/add-team-members`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const removeTeamMembersPM = (data, token) => axios.post(
-  `${API_BASE}/project-manager/remove-team-members`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const getTeamMembersPM = (teamId, token) => teamId
-  ? axios.get(`${API_BASE}/project-manager/team-members?team_id=${teamId}`, { headers: { Authorization: `Bearer ${token}` } })
-  : axios.get(`${API_BASE}/project-manager/team-members`, { headers: { Authorization: `Bearer ${token}` } });
+
+// Project Manager Endpoints
+export const getAllTasksPM = () => apiClient.get('/project-manager/tasks');
+export const getTaskByIdPM = (taskId) => apiClient.get(`/project-manager/task/${taskId}`);
+export const createTeamMemberPM = (data) => apiClient.post('/project-manager/team-member', data);
+export const addTeamMembersPM = (data) => apiClient.post('/project-manager/add-team-members', data);
+export const removeTeamMembersPM = (data) => apiClient.post('/project-manager/remove-team-members', data);
+export const getTeamMembersPM = (teamId) => {
+  const url = teamId ? `/project-manager/team-members?team_id=${teamId}` : '/project-manager/team-members';
+  return apiClient.get(url);
+};
 
 // Team Lead Endpoints
-export const createTask = (data, token) => axios.post(
-  `${API_BASE}/team-lead/tasks/`,
-  data,
-  { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-);
+export const createTask = (data) => apiClient.post('/team-lead/tasks/', data);
 
-// assignTask expects { user_id: "...", ... } body and taskId provided in data.taskId
-export const assignTaskTL = (data, token) => {
-  const taskId = data.taskId;
-  const body = { ...data };
-  delete body.taskId;
-  return axios.post(
-    `${API_BASE}/team-lead/assign-task/${encodeURIComponent(taskId)}`,
-    body,
-    { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-  );
+export const assignTaskTL = (data) => {
+  const { taskId, ...body } = data;
+  return apiClient.post(`/team-lead/assign-task/${encodeURIComponent(taskId)}`, body);
 };
 
-// Keep or remove project-manager wrappers that previously allowed create/assign.
-// If present, make them explicit no-ops or throw to avoid accidental use:
-export const createTaskPM = () => {
-  throw new Error("Project managers are not allowed to create tasks. Use team-lead UI.");
-};
-export const assignTaskPM = () => {
-  throw new Error("Project managers are not allowed to assign tasks. Use team-lead UI.");
-};
-
-export const getTasksTL = (token) => axios.get(
-  `${API_BASE}/team-lead/tasks`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const updateTaskTL = (taskId, data, token) => axios.put(
-  `${API_BASE}/team-lead/update-task/${taskId}`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const trackTasksTL = (token) => axios.get(
-  `${API_BASE}/team-lead/track-tasks`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const createTeamTL = (data, token) => axios.post(
-  `${API_BASE}/team-lead/create-team`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const addTeamMembersTL = (data, token) => axios.post(
-  `${API_BASE}/team-lead/add-team-members`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const createTeamMemberTL = (data, token) => axios.post(
-  `${API_BASE}/team-lead/team-member`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const getTeamMembersTL = (token) => axios.get(
-  `${API_BASE}/team-lead/team-members`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const getTeamMemberByIdTL = (id, token) => axios.get(
-  `${API_BASE}/team-lead/team-member/${id}`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const updateTeamMemberTL = (id, data, token) => axios.put(
-  `${API_BASE}/team-lead/team-member/${id}`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const deleteTeamMemberTL = (id, token) => axios.delete(
-  `${API_BASE}/team-lead/team-member/${id}`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
+export const getTasksTL = () => apiClient.get('/team-lead/tasks');
+export const updateTaskTL = (taskId, data) => apiClient.put(`/team-lead/update-task/${taskId}`, data);
+export const trackTasksTL = () => apiClient.get('/team-lead/track-tasks');
+export const createTeamTL = (data) => apiClient.post('/team-lead/create-team', data);
+export const getTeamsTL = () => apiClient.get('/team-lead/teams');
+export const addTeamMembersTL = (data) => apiClient.post('/team-lead/add-team-members', data);
+export const createTeamMemberTL = (data) => apiClient.post('/team-lead/team-member', data);
+export const getTeamMembersTL = () => apiClient.get('/team-lead/team-members');
+export const getTeamMemberByIdTL = (id) => apiClient.get(`/team-lead/team-member/${id}`);
+export const updateTeamMemberTL = (id, data) => apiClient.put(`/team-lead/team-member/${id}`, data);
+export const deleteTeamMemberTL = (id) => apiClient.delete(`/team-lead/team-member/${id}`);
 
 // Team Member Endpoints
-export const getTasksTM = (token) => axios.get(
-  `${API_BASE}/team-member/tasks/`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const updateTaskTM = (taskId, data, token) => axios.put(
-  `${API_BASE}/team-member/tasks/${taskId}`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const createTeamMemberTM = (data, token) => axios.post(
-  `${API_BASE}/team-member/team-member`,
-  data,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const getTeamMembersTM = (token) => axios.get(
-  `${API_BASE}/team-member/team-members`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-export const getTeamMemberByIdTM = (id, token) => axios.get(
-  `${API_BASE}/team-member/team-member/${id}`,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-// API utility for backend endpoints
+export const getTasksTM = () => apiClient.get('/team-member/tasks/');
+export const updateTaskTM = (taskId, data) => apiClient.put(`/team-member/tasks/${taskId}`, data);
+export const createTeamMemberTM = (data) => apiClient.post('/team-member/team-member', data);
+export const getTeamMembersTM = () => apiClient.get('/team-member/team-members');
+export const getTeamMemberByIdTM = (id) => apiClient.get(`/team-member/team-member/${id}`);
 
 
+// General / Shared (Project Manager also uses these via legacy wrappers, or we can unify)
+export const fetchTasks = () => apiClient.get('/project-manager/tasks').then(res => res.data);
+export const fetchTeams = () => apiClient.get('/project-manager/teams').then(res => res.data);
+export const createTeam = (team) => apiClient.post('/project-manager/create-team', team).then(res => res.data);
+export const fetchAllTeamMembers = () => apiClient.get('/project-manager/team-members').then(res => res.data);
+export const fetchTeamMembers = (teamId) => apiClient.get(`/project-manager/team-members/${teamId}`).then(res => res.data);
+export const fetchTeamMembersByRole = (role) => apiClient.get(`/project-manager/team-members-by-role/${role}`).then(res => res.data);
+export const updateTeam = (teamId, team) => apiClient.put(`/project-manager/update-team/${teamId}`, team).then(res => res.data);
+export const deleteTeam = (teamId) => apiClient.delete(`/project-manager/teams/${teamId}`).then(res => res.data);
 
-export async function login({ username, password }) {
-  try {
-    const res = await axios.post(
-      `${API_BASE}/auth/login`,
-      new URLSearchParams({ username, password }),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    );
-    return res.data;
-  } catch (err) {
-    throw new Error('Login failed');
-  }
-}
+export const createTeamMember = (member) => apiClient.post('/project-manager/team-member', member).then(res => res.data);
+export const updateTeamMember = (userId, member) => apiClient.put(`/project-manager/users/${userId}`, member).then(res => res.data);
+export const deleteUser = (userId) => apiClient.delete(`/project-manager/users/${userId}`).then(res => res.data);
 
-
-export async function fetchTasks(token) {
-  try {
-    const res = await axios.get(`${API_BASE}/project-manager/tasks`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to fetch tasks');
-  }
-}
-
-
-export async function fetchTeams(token) {
-  try {
-    const res = await axios.get(`${API_BASE}/project-manager/teams`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to fetch teams');
-  }
-}
-
-
-export async function createTeam(token, team) {
-  try {
-    const res = await axios.post(
-      `${API_BASE}/project-manager/create-team`,
-      team,
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-    );
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to create team');
-  }
-}
-
-export async function fetchAllTeamMembers(token) {
-  try {
-    const res = await axios.get(`${API_BASE}/project-manager/team-members`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to fetch users');
-  }
-}
-
-export async function fetchTeamMembers(token, teamId) {
-  try {
-    const res = await axios.get(`${API_BASE}/project-manager/team-members/${teamId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to fetch users');
-  }
-}
-
-
-export async function fetchTeamMembersByRole(token, role) {
-  try {
-    const res = await axios.get(`${API_BASE}/project-manager/team-members-by-role/${role}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to fetch users');
-  }
-}
-
-
-export async function updateTeam(token, teamId, team) {
-  try {
-    const res = await axios.put(
-      `${API_BASE}/project-manager/update-team/${teamId}`,
-      team,
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-    );
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to update team');
-  }
-}
-
-
-export async function deleteTeam(token, teamId) {
-  try {
-    const res = await axios.delete(`${API_BASE}/project-manager/teams/${teamId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to delete team');
-  }
-}
-
-// Team Members (Users)
-
-export async function createTeamMember(token, member) {
-  try {
-    const res = await axios.post(
-      `${API_BASE}/project-manager/team-member`,
-      member,
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-    );
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to create user');
-  }
-}
-
-
-export async function updateTeamMember(token, userId, member) {
-  try {
-    const res = await axios.put(
-      `${API_BASE}/project-manager/users/${userId}`,
-      member,
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-    );
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to update user');
-  }
-}
-
-
-export async function deleteUser(token, userId) {
-  try {
-    const res = await axios.delete(`${API_BASE}/project-manager/users/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to delete user');
-  }
-}
-
-// Tasks
-
-/* export async function createTask(token, task) {
-  try {
-    const res = await axios.post(
-      `${API_BASE}/project-manager/tasks`,
-      task,
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-    );
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to create task');
-  }
-}
- */
-
-export async function updateTask(token, taskId, task) {
-  try {
-    const res = await axios.put(
-      `${API_BASE}/project-manager/tasks/${taskId}`,
-      task,
-      { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
-    );
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to update task');
-  }
-}
-
-
-export async function deleteTask(token, taskId) {
-  try {
-    const res = await axios.delete(`${API_BASE}/project-manager/tasks/${taskId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-  } catch (err) {
-    throw new Error('Failed to delete task');
-  }
-}
+export const updateTask = (taskId, task) => apiClient.put(`/project-manager/tasks/${taskId}`, task).then(res => res.data);
+export const deleteTask = (taskId) => apiClient.delete(`/project-manager/tasks/${taskId}`).then(res => res.data);

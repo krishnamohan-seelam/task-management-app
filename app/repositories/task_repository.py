@@ -82,17 +82,27 @@ class TaskRepository(AbstractRepository):
         """
         return self.collection.find()
 
-    async def get_tasks_by_member(self, assigned_to: str) -> list:
-        """
-        Get all tasks assigned to a member by ObjectId.
+        return results
 
-        Args:
-            assigned_to (str): Member ObjectId as string.
-
-        Returns:
-            list: Tasks assigned to the member.
+    async def get_tasks_by_team_ids(self, team_ids: List[str]) -> list:
         """
-        cursor = self.collection.find({"assigned_to": assigned_to})
+        Get tasks for a list of team IDs.
+        """
+        # Convert strings to ObjectIds if stored as ObjectId in tasks collection
+        # But wait, app/seeding.py stored team_id as string: "team_id": str(team_id)
+        # And TaskModel defines team_id as PyObjectId (string).
+        # Let's check how it's stored.
+        # TaskModel: team_id: Optional[PyObjectId]
+        # In Mongo, PyObjectId usually serializes to str if not handled.
+        # But TaskRepository.create uses insert_one(obj).
+        # And TaskModel serializer serializes objectid to str.
+        # So in DB it might be string.
+        # Seeding script definitely uses string.
+        # So let's query with strings first.
+        cursor = self.collection.find({"team_id": {"$in": team_ids}})
+        # Also try ObjectIds just in case
+        # cursor = self.collection.find({"team_id": {"$in": [ObjectId(tid) for tid in team_ids]}})
+        # Actually seeding script: "team_id": str(team_id)
         results = []
         async for task in cursor:
             results.append(task)

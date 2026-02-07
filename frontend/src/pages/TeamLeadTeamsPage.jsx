@@ -1,17 +1,14 @@
 import React, { useEffect } from 'react';
 import { Card, Elevation, Button, Callout, Spinner } from '@blueprintjs/core';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchDashboardData } from '../dashboardSlice';
+import { fetchTLDashboardData } from '../dashboardSlice';
 
 const TeamLeadTeamsPage = () => {
   const dispatch = useDispatch();
   const { teams, loading, error } = useSelector(state => state.dashboard);
   const token = useSelector((state) => state.user.access_token);
   useEffect(() => {
-
-    if (token) {
-      dispatch(fetchDashboardData(token));
-    }
+    dispatch(fetchTLDashboardData());
   }, [dispatch]);
 
   return (

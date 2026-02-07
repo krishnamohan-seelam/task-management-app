@@ -23,5 +23,5 @@ def test_add_team_members_schema():
     assert schema.member_ids == ['1']
 
 def test_create_team_member_schema():
-    schema = CreateTeamMemberSchema(name='John', email='john@example.com', role='developer')
+    schema = CreateTeamMemberSchema(name='John', email='john@example.com', role='developer', password='password123')
     assert schema.name == 'John'

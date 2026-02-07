@@ -255,12 +255,12 @@ class TeamService:
                 status_code=404, detail="Team or member not found or update failed"
             )
 
-    async def get_team_by_lead(self, lead_id: str) -> List[Dict]:
+    async def get_team_by_project_manager(self, project_manager_id: str) -> List[Dict]:
         """
         Get all teams led by a specific team lead.
 
         Args:
-            lead_id (str): Team lead ID.
+            project_manager_id (str): Team lead ID.
 
         Returns:
             List[dict]: Teams led by the lead.
@@ -268,22 +268,32 @@ class TeamService:
         Raises:
             HTTPException: If none found.
         """
-        teams = await self.team_repository.get_team_by_lead(lead_id)
+        teams = await self.team_repository.get_team_by_project_manager(project_manager_id)
         if teams:
             return teams
         else:
             raise HTTPException(
-                status_code=404, detail="No teams found for the specified lead"
+                status_code=404, detail="No teams found for the specified project manager"
             )
 
     async def add_team_members(
-        self, team_id: str, add_members_schema, team_lead_id: str
+        self, team_id: str, add_members_schema
     ) -> dict:
         """
-        Add members to a team by their ObjectIds.
+        Add members to a team by their ObjectIds, enforcing size limits.
         """
+        team = await self.get_team(team_id)
+        current_members = team.get("member_ids", [])
+        new_members = len(add_members_schema.member_ids)
+        if len(current_members) + new_members > 5:
+             # This limit could be moved to config
+             raise HTTPException(status_code=400, detail="Team size limit of 5 exceeded.")
+
         for member_id in add_members_schema.member_ids:
+            # Check if member already exists to avoid double counting if not using $addToSet in a way that handles it gracefully for size check (but we checked size before)
+            # The repository uses $addToSet so duplicates won't be added, but we should be careful.
             await self.team_repository.add_team_member(team_id, member_id)
+        
         updated_team = await self.team_repository.get_team_by_id(team_id)
         return updated_team
 

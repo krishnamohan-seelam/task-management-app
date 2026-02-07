@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from faker import Faker
 from bson import ObjectId
 import random
+from app.utils import get_password_hash
 
 fake = Faker()
 client = MongoClient("mongodb://localhost:27017/")
@@ -27,6 +28,7 @@ for _ in range(50):  # 50 users
         "name": fake.name(),
         "email": fake.email(),
         "role": role,
+        "hashed_password": get_password_hash("password123"),
         "teams": []  # to be filled later
     })
 db.team_members.insert_many(users)

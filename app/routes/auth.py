@@ -4,6 +4,7 @@ from jose import jwt
 from datetime import datetime, timedelta, timezone
 from app.services.team_member_service import get_team_member_service, TeamMemberService
 from app.models.team import Role
+from app.utils import verify_password
 import os
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecret")
@@ -19,7 +20,7 @@ async def login(
 ):
     # For demo: username = email, password = role (not secure, just for RBAC demo)
     member = await team_member_service.get_team_member_by_email(form_data.username)
-    if not member or form_data.password != member.get("role"):
+    if not member or not verify_password(form_data.password, member.get("hashed_password")):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {

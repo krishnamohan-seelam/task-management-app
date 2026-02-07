@@ -8,7 +8,7 @@ async def test_create_team_member_success():
     repo = AsyncMock()
     repo.create_team_member = AsyncMock(return_value='1')
     service = TeamMemberService(team_member_repository=repo)
-    schema = CreateTeamMemberSchema(name='John', email='john@example.com', role='developer')
+    schema = CreateTeamMemberSchema(name='John', email='john@example.com', role='developer', password='password123')
     result = await service.create_team_member(schema)
     assert result['name'] == 'John'
 

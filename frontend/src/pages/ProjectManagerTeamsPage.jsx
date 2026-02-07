@@ -1,23 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner, MenuItem } from '@blueprintjs/core';
+import { Card, Elevation, FormGroup, InputGroup, Button, Callout, Spinner } from '@blueprintjs/core';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDashboardData, createTeamThunk, editTeamThunk, deleteTeamThunk } from '../dashboardSlice';
-
 
 const ProjectManagerTeamsPage = () => {
   const dispatch = useDispatch();
   const { teams, members, loading, error } = useSelector(state => state.dashboard);
-  const token = useSelector((state) => state.user.access_token);
+  // Token is handled by interceptors now
   const [teamName, setTeamName] = useState('');
   const [selectedManager, setSelectedManager] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editTeamId, setEditTeamId] = useState(null);
 
   useEffect(() => {
-    if (token) {
-      dispatch(fetchDashboardData(token));
-    }
-  }, [dispatch, token]);
+    dispatch(fetchDashboardData());
+  }, [dispatch]);
 
   // Project managers can be filtered from members
   const projectManagers = members.filter(m => m.role === 'project_manager');
@@ -33,9 +30,9 @@ const ProjectManagerTeamsPage = () => {
       project_manager_name: managerObj ? managerObj.name : '',
     };
     if (editMode && editTeamId) {
-      dispatch(editTeamThunk({ token, teamId: editTeamId, team: teamPayload }));
+      dispatch(editTeamThunk({ teamId: editTeamId, team: teamPayload }));
     } else {
-      dispatch(createTeamThunk({ token, team: teamPayload }));
+      dispatch(createTeamThunk({ team: teamPayload }));
     }
     setTeamName('');
     setSelectedManager('');
@@ -48,12 +45,13 @@ const ProjectManagerTeamsPage = () => {
     setEditMode(true);
     setEditTeamId(team.team_id || team._id);
     setTeamName(team.name);
-    setSelectedManager(team.project_manager_id || '');
+    setSelectedManager(team.project_manager_id || (team.project_manager ? (typeof team.project_manager === 'object' ? team.project_manager.$oid : team.project_manager) : ''));
+    // The project_manager might be an ID or object, depending on backend response.
   };
 
   // Handle delete
   const handleDelete = (teamId) => {
-    dispatch(deleteTeamThunk({ token, teamId }));
+    dispatch(deleteTeamThunk({ teamId }));
     // Optionally reset form if deleting the team being edited
     if (editMode && editTeamId === teamId) {
       setTeamName('');

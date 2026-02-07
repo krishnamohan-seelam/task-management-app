@@ -170,3 +170,10 @@ class TeamRepository(AbstractRepository):
         for team in teams:
             member_ids.update(team.get("member_ids", []))
         return list(member_ids)
+
+    async def get_team_by_project_manager(self, lead_id: str) -> List[Dict]:
+        """
+        Get all teams led by a specific team lead (project_manager).
+        """
+        cursor = self.collection.find({"project_manager": ObjectId(lead_id)})
+        return await cursor.to_list(length=None)

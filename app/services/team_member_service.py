@@ -12,6 +12,7 @@ from app.models.team import (
 )
 from config.database import get_database
 from app.logging_config import logger
+from app.utils import get_password_hash
 
 from pymongo.asynchronous.database import AsyncDatabase
 from fastapi import HTTPException
@@ -42,6 +43,9 @@ class TeamMemberService:
         # Convert the Pydantic model to a dictionary
 
         team_member_data = team_member_data.model_dump(exclude_unset=True)
+        password = team_member_data.pop("password")
+        team_member_data["hashed_password"] = get_password_hash(password)
+        
         team_member = TeamMemberModel(**team_member_data)
         document = team_member.model_dump(by_alias=True)
 

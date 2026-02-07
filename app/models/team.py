@@ -39,6 +39,7 @@ class TeamMemberModel(BaseModel):
     )
     email: EmailStr
     role: Role  # Now uses Enum directly
+    hashed_password: str
     teams: Optional[List[PyObjectId]] = Field(
         default_factory=list
     )  # Store only ObjectIds
@@ -144,6 +145,39 @@ class UpdateTeamSchema(BaseModel):
     )
 
 
+class ResponseTeamMemberSchema(BaseModel):
+    """
+    Schema for returning team member data in API responses.
+    """
+
+    member_id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    role: Optional[Role] = None
+
+    @field_serializer("member_id", when_used="json")
+    def serialize_objectid(self, value):
+        return str(value) if value else None
+
+    @field_serializer("role", when_used="json")
+    def serialize_role(self, value):
+        return str(value) if value else None
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        validate_by_name=True,
+        arbitrary_types_allowed=True,
+        use_enum_values=True,
+        validate_assignment=True,
+        extra="allow",
+        json_schema_extra={
+            "str_strip_whitespace": True,
+            "str_min_length": 1,
+            "str_max_length": 255,
+        },
+    )
+
+
 class TeamSchema(BaseModel):
     """
     Schema for returning team data including members in API responses.
@@ -151,7 +185,7 @@ class TeamSchema(BaseModel):
 
     team_id: Optional[PyObjectId] = Field(default=None, alias="_id")
     name: Optional[str] = None
-    members: Optional[List[TeamMemberModel]] = None
+    members: Optional[List[ResponseTeamMemberSchema]] = None
     project_manager: Optional[PyObjectId] = None
     project_manager_name: Optional[str] = None
     model_config = ConfigDict(
@@ -204,6 +238,7 @@ class CreateTeamMemberSchema(BaseModel):
     )
     email: EmailStr
     role: Role
+    password: str = Field(..., min_length=6, max_length=128)
     model_config = ConfigDict(
         json_schema_extra={
             "str_strip_whitespace": True,
@@ -213,37 +248,7 @@ class CreateTeamMemberSchema(BaseModel):
     )
 
 
-class ResponseTeamMemberSchema(BaseModel):
-    """
-    Schema for returning team member data in API responses.
-    """
 
-    member_id: Optional[PyObjectId] = Field(default=None, alias="_id")
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    role: Optional[Role] = None
-
-    @field_serializer("member_id", when_used="json")
-    def serialize_objectid(self, value):
-        return str(value) if value else None
-
-    @field_serializer("role", when_used="json")
-    def serialize_role(self, value):
-        return str(value) if value else None
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        validate_by_name=True,
-        arbitrary_types_allowed=True,
-        use_enum_values=True,
-        validate_assignment=True,
-        extra="allow",
-        json_schema_extra={
-            "str_strip_whitespace": True,
-            "str_min_length": 1,
-            "str_max_length": 255,
-        },
-    )
 
 
 class ResponseTeamMembersCollection(BaseModel):

@@ -21,12 +21,28 @@ import { useSelector } from 'react-redux';
 // FocusStyleManager.onlyShowFocusOnTabs(); // Removed in v6
 
 function RequireAuth({ children }) {
-  //const token = localStorage.getItem('access_token');
   const token = useSelector((state) => state.user.access_token);
   const location = useLocation();
+
   if (!token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  return children;
+}
+
+function RequireRole({ children, allowedRoles }) {
+  const { role, access_token } = useSelector((state) => state.user);
+  const location = useLocation();
+
+  if (!access_token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
+
   return children;
 }
 
@@ -38,17 +54,28 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/logout" element={<LogoutPage />} />
+
+          {/* General Routes */}
           <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
-          <Route path="/dashboard" element={<RequireAuth><DashboardPage /></RequireAuth>} />
-          <Route path="/my-tasks" element={<RequireAuth><TeamMemberTasksPage /></RequireAuth>} />
-          <Route path="/lead/teams" element={<RequireAuth><TeamLeadTeamsPage /></RequireAuth>} />
-          <Route path="/lead/tasks" element={<RequireAuth><TeamLeadTasksPage /></RequireAuth>} />
-          <Route path="/pm/teams" element={<RequireAuth><ProjectManagerTeamsPage /></RequireAuth>} />
-          <Route path="/pm/users" element={<RequireAuth><ProjectManagerUsersPage /></RequireAuth>} />
-          <Route path="/pm/tasks" element={<RequireAuth><ProjectManagerTasksPage /></RequireAuth>} />
+          <Route path="/dashboard" element={<RequireRole allowedRoles={['project_manager']}><DashboardPage /></RequireRole>} />
+          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+
+          {/* Project Manager Routes */}
+          <Route path="/pm/teams" element={<RequireRole allowedRoles={['project_manager']}><ProjectManagerTeamsPage /></RequireRole>} />
+          <Route path="/pm/users" element={<RequireRole allowedRoles={['project_manager']}><ProjectManagerUsersPage /></RequireRole>} />
+          <Route path="/pm/tasks" element={<RequireRole allowedRoles={['project_manager']}><ProjectManagerTasksPage /></RequireRole>} />
+
+          {/* Team Lead Routes */}
+          <Route path="/lead/teams" element={<RequireRole allowedRoles={['team_lead']}><TeamLeadTeamsPage /></RequireRole>} />
+          <Route path="/lead/tasks" element={<RequireRole allowedRoles={['team_lead']}><TeamLeadTasksPage /></RequireRole>} />
+
+          {/* Team Member Routes */}
+          <Route path="/my-tasks" element={<RequireRole allowedRoles={['team_member', 'developer']}><TeamMemberTasksPage /></RequireRole>} />
+
+          {/* Shared/Legacy Routes - restricting or keeping valid? */}
           <Route path="/tasks" element={<RequireAuth><Tasks /></RequireAuth>} />
           <Route path="/teams" element={<RequireAuth><Teams /></RequireAuth>} />
-          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>

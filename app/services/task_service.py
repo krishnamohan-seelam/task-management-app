@@ -149,6 +149,14 @@ class TaskService:
             )
         return [TaskModel(**task).model_dump(by_alias=True) for task in tasks]
 
+    async def get_tasks_by_team_ids(self, team_ids: List[str]) -> List[Dict]:
+        """
+        Get tasks for a list of team IDs.
+        """
+        tasks = await self.task_repository.get_tasks_by_team_ids(team_ids)
+        # return tasks
+        return [TaskModel(**task).model_dump(by_alias=True) for task in tasks]
+
     async def update_task_status(
         self, task_id: str, task_update: UpdateTaskSchema
     ) -> Dict:

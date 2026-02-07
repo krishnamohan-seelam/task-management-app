@@ -14,32 +14,32 @@ from app.models.team import (
     ResponseTeamMembersCollection,
     AddTeamMembersSchema,
     ResponseTeamSchema,
+    ResponseTeamCollection,
 )
 from app.services.task_service import TaskService, get_task_service
 from app.services.team_member_service import TeamMemberService, get_team_member_service
 from app.services.team_service import TeamService, get_team_service
 from app.logging_config import logger
-from app.dependencies.auth import require_roles
+from app.dependencies.auth import require_roles, get_current_user
 
 router = APIRouter(dependencies=[Depends(require_roles("team_lead"))])
 
 
 @router.post("/tasks/", response_model=TaskModel, response_model_by_alias=False)
 async def create_task(
-    task: CreateTaskSchema, task_service: TaskService = Depends(get_task_service)
+    task: CreateTaskSchema, 
+    task_service: TaskService = Depends(get_task_service),
+    team_service: TeamService = Depends(get_team_service),
+    current_user: dict = Depends(get_current_user)
 ):
     logger.info(f"[Team Lead] Creating task: {task}")
-    """
-    Creates a new task using the provided task data.
-
-    Args:
-        task (CreateTaskSchema): The schema containing the details of the task to be created.
-        task_service (TaskService, optional): The service responsible for handling task-related operations. 
-            Defaults to an instance provided by the `get_task_service` dependency.
-
-    Returns:
-        dict: The created task details as returned by the task service.
-    """
+    
+    # Verify the user manages the team
+    if task.team_id:
+        team = await team_service.get_team(str(task.team_id))
+        if str(team.get("project_manager")) != current_user["user_id"]:
+             raise HTTPException(status_code=403, detail="You do not have permission to create tasks for this team.")
+    
     return await task_service.create_task(task)
 
 
@@ -48,42 +48,54 @@ async def create_task(
 )
 async def assign_task(
     task_id: str,
-    task: AssignTaskSchema,
+    task_assign: AssignTaskSchema,
     task_service: TaskService = Depends(get_task_service),
+    team_service: TeamService = Depends(get_team_service),
+    current_user: dict = Depends(get_current_user)
 ):
-    """
-    Assign a task to a user.
-    Args:
-        task (AssignTaskSchema): The schema containing the details of the task to be assigned.
-        task_service (TaskService, optional): The service responsible for handling task-related operations.
-            Defaults to a dependency injection of `get_task_service`.
-    Returns:
-        The assigned task object after successful assignment.
-    Raises:
-        HTTPException: If an error occurs during task assignment, an HTTP 400 error is raised with the error details.
-    """
+    # Fetch task to check team ownership
+    existing_task = await task_service.get_task(task_id)
+    team_id = existing_task.get("team_id")
+    
+    if not team_id:
+         raise HTTPException(status_code=400, detail="Task is not associated with any team.")
+
+    # Check permission
+    team = await team_service.get_team(str(team_id))
+    if str(team.get("project_manager")) != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="You do not have permission to assign this task.")
+
+    # Check assignee membership
+    assignee_id = str(task_assign.assigned_to)
+    member_ids = [str(m) for m in team.get("member_ids", [])]
+    if assignee_id not in member_ids:
+            raise HTTPException(status_code=400, detail="Assignee is not a member of the task's team.")
+
     try:
-        task = await task_service.update_task(task_id, task)
-        return task
+        updated_task = await task_service.update_task(task_id, task_assign)
+        return updated_task
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/tasks", response_model=List[TaskModel])
 async def get_assigned_tasks(
-    team_lead_id: str, task_service: TaskService = Depends(get_task_service)
+    current_user: dict = Depends(get_current_user),
+    task_service: TaskService = Depends(get_task_service),
+    team_service: TeamService = Depends(get_team_service)
 ):
     """
-    Retrieve all tasks assigned to a specific team lead.
-
-    Args:
-        team_lead_id (str): The unique identifier of the team lead whose tasks are to be retrieved.
-        task_service (TaskService, optional): Dependency-injected service for task operations.
-
-    Returns:
-        List[Task]: A list of tasks assigned to the specified team lead.
+    Retrieve all tasks for teams led by the current user.
     """
-    tasks = await task_service.get_tasks_by_team_lead(team_lead_id)
+    # Get teams managed by user
+    teams = await team_service.get_team_by_project_manager(current_user["user_id"])
+    if not teams:
+        return []
+        
+    team_ids = [str(t["_id"]) for t in teams]
+    
+    # Get tasks for these teams
+    tasks = await task_service.get_tasks_by_team_ids(team_ids)
     return tasks
 
 
@@ -92,7 +104,17 @@ async def update_task(
     task_id: str,
     task_update: UpdateTaskSchema,
     task_service: TaskService = Depends(get_task_service),
+    team_service: TeamService = Depends(get_team_service),
+    current_user: dict = Depends(get_current_user)
 ):
+    # Verify ownership
+    existing_task = await task_service.get_task(task_id)
+    team_id = existing_task.get("team_id")
+    if team_id:
+        team = await team_service.get_team(str(team_id))
+        if str(team.get("project_manager")) != current_user["user_id"]:
+            raise HTTPException(status_code=403, detail="You do not have permission to update this task.")
+
     updated_task = await task_service.update_task(task_id, task_update)
     if not updated_task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -109,13 +131,18 @@ async def track_tasks(task_service: TaskService = Depends(get_task_service)):
 async def add_team_members(
     team_id: str,
     members: AddTeamMembersSchema,
-    team_lead_id: str,
     team_service: TeamService = Depends(get_team_service),
     team_member_service: TeamMemberService = Depends(get_team_member_service),
+    current_user: dict = Depends(get_current_user)
 ):
-    updated_team = await team_service.add_team_members(team_id, members, team_lead_id)
+    # Verify permission
+    team = await team_service.get_team(team_id)
+    if str(team.get("project_manager")) != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="You do not have permission to add members to this team.")
+
+    updated_team = await team_service.add_team_members(team_id, members)
     if not updated_team:
-        raise HTTPException(status_code=400, detail="Adding team members failed")
+        raise HTTPException(status_code=400, detail="Adding team members failed or team size limit exceeded")
     return updated_team
 
 
@@ -166,3 +193,20 @@ async def get_team_members(
         team_id, team_member_service.team_member_repository
     )
     return ResponseTeamMembersCollection(members=members)
+
+
+@router.get("/teams", response_model=ResponseTeamCollection)
+async def get_teams(
+    current_user: dict = Depends(get_current_user),
+    team_service: TeamService = Depends(get_team_service),
+):
+    """
+    Retrieve teams managed by the current user.
+    """
+    teams = await team_service.get_team_by_project_manager(current_user["user_id"])
+    converted_teams = []
+    # Convert dicts from mongo to objects expected by schema if necessary, 
+    # but ResponseTeamCollection expects 'teams' list of ResponseTeamSchema
+    # TeamService.get_team_by_project_manager returns list of dicts.
+    # ResponseTeamSchema can create from attributes/dict if configured.
+    return ResponseTeamCollection(teams=teams)
